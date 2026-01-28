@@ -21,3 +21,9 @@ springdoc.swagger-ui.disable-swagger-default-url=true
 springdoc.swagger-ui.display-request-duration=true
 springdoc.swagger-ui.default-models-expand-depth=1
 springdoc.swagger-ui.default-model-expand-depth=1
+
+# JWT
+jwt.secret=your-secret-key-at-least-256-bits-long-for-hs256-algorithm-security-please-change-this
+jwt.access-token-expiration=3600000
+jwt.refresh-token-expiration=604800000
+

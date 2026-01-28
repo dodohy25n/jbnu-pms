@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/spaces")
+@RequestMapping("/spaces")
 public class SpaceController {
 
     private final SpaceService spaceService;
@@ -22,7 +22,7 @@ public class SpaceController {
     @PostMapping
     public ResponseEntity<Long> createSpace(@RequestBody CreateSpaceRequest request) {
         Long spaceId = spaceService.createSpace(request);
-        return ResponseEntity.created(URI.create("/api/spaces/" + spaceId)).body(spaceId);
+        return ResponseEntity.created(URI.create("/spaces/" + spaceId)).body(spaceId);
     }
 
     @GetMapping("/{spaceId}")
