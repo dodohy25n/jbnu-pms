@@ -21,19 +21,15 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper;
+        private final ObjectMapper objectMapper;
 
-    @Override
-    public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException
-    ) throws IOException, ServletException {
+        @Override
+        public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
 
         CustomException exception = (CustomException) request.getAttribute("exception");
         ErrorCode errorCode = exception != null ? exception.getErrorCode() : ErrorCode.UNAUTHORIZED;
 
-        log.error("Unauthorized error: {}", errorCode.getMessage());
+                log.error("Unauthorized error: {}", errorCode.getMessage());
 
         ErrorResponse errorResponse = ErrorResponse.of(
                 errorCode,

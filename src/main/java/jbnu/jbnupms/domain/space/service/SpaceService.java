@@ -1,13 +1,15 @@
 package jbnu.jbnupms.domain.space.service;
 
-import jbnu.jbnupms.domain.space.entity.Space;
-import jbnu.jbnupms.domain.space.entity.SpaceMember;
-import jbnu.jbnupms.domain.space.repository.SpaceMemberRepository;
-import jbnu.jbnupms.domain.space.repository.SpaceRepository;
+import jbnu.jbnupms.common.exception.CustomException;
+import jbnu.jbnupms.common.exception.ErrorCode;
 import jbnu.jbnupms.domain.space.dto.CreateSpaceRequest;
 import jbnu.jbnupms.domain.space.dto.SpaceDetailResponse;
 import jbnu.jbnupms.domain.space.dto.SpaceResponse;
 import jbnu.jbnupms.domain.space.dto.UpdateSpaceRequest;
+import jbnu.jbnupms.domain.space.entity.Space;
+import jbnu.jbnupms.domain.space.entity.SpaceMember;
+import jbnu.jbnupms.domain.space.repository.SpaceMemberRepository;
+import jbnu.jbnupms.domain.space.repository.SpaceRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +31,7 @@ public class SpaceService {
         @Transactional
         public Long createSpace(CreateSpaceRequest request) {
                 User owner = userRepository.findById(request.getOwnerId())
-                                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 Space space = Space.builder()
                                 .name(request.getName())
@@ -52,7 +54,7 @@ public class SpaceService {
         @Transactional
         public void updateSpace(Long spaceId, UpdateSpaceRequest request) {
                 Space space = spaceRepository.findById(spaceId)
-                                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
                 // todo: 로그인한 유저 ADMIN인지 권한 확인
 
@@ -62,7 +64,7 @@ public class SpaceService {
         @Transactional
         public void deleteSpace(Long spaceId) {
                 Space space = spaceRepository.findById(spaceId)
-                                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
                 // todo: 로그인한 유저 ADMIN인지 권한 확인
 
@@ -71,7 +73,7 @@ public class SpaceService {
 
         public SpaceDetailResponse getSpace(Long spaceId) {
                 Space space = spaceRepository.findById(spaceId)
-                                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
                 List<SpaceMember> members = spaceMemberRepository.findBySpaceId(spaceId);
 

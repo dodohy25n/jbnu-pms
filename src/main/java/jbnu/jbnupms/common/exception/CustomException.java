@@ -16,4 +16,8 @@ public class CustomException extends RuntimeException {
         super(message);
         this.errorCode = errorCode;
     }
+<<<<<<< feat/user-refactor
 }
+=======
+}
+>>>>>>> main

@@ -28,4 +28,8 @@ public class CommonResponse<T> {
         this.isSuccess = isSuccess;
         this.data = data;
     }
+<<<<<<< feat/user-refactor
 }
+=======
+}
+>>>>>>> main

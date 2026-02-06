@@ -47,9 +47,15 @@ public class UserService {
 
         User user = findActiveUserById(targetUserId);
 
+<<<<<<< feat/common-response
+        if (!user.getProvider().equals("EMAIL") && request.getPassword() != null) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+=======
         // 변경 전 데이터 저장 (감사 로그용)
         String oldName = user.getName();
         String oldProfileImage = user.getProfileImage();
+>>>>>>> feat/user-refactor
 
         // 이름 업데이트
         if (request.getName() != null && !request.getName().isBlank()) {
@@ -138,12 +144,25 @@ public class UserService {
         user.softDelete();
     }
 
+<<<<<<< feat/common-response
+    private User findUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
     private User findActiveUserById(Long userId) {
         User user = userRepository.findActiveById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getIsDeleted()) {
+<<<<<<< feat/user-refactor
             throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
+            throw new GlobalException(ErrorCode.USER_ALREADY_DELETED);
+>>>>>>> feat/user-refactor
+>>>>>>> main
         }
 
         return user;

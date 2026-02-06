@@ -20,11 +20,23 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
+<<<<<<< feat/common-response
+        User user = userRepository.findById(Long.parseLong(userId))
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
         User user = userRepository.findActiveById(Long.parseLong(userId))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getIsDeleted()) {
+<<<<<<< feat/user-refactor
             throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
+            throw new GlobalException(ErrorCode.USER_ALREADY_DELETED);
+>>>>>>> feat/user-refactor
+>>>>>>> main
         }
 
         return new org.springframework.security.core.userdetails.User(
@@ -35,7 +47,16 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     public User getUserById(Long userId) {
-        return userRepository.findActiveById(userId)
+<<<<<<< feat/common-response
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+=======
+        return userRepository.findActiveById(userId)
+<<<<<<< feat/user-refactor
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+=======
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+>>>>>>> feat/user-refactor
+>>>>>>> main
     }
 }

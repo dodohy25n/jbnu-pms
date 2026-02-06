@@ -1,5 +1,6 @@
 package jbnu.jbnupms.domain.space.controller;
 
+import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.space.dto.CreateSpaceRequest;
 import jbnu.jbnupms.domain.space.dto.SpaceDetailResponse;
 import jbnu.jbnupms.domain.space.dto.SpaceResponse;
@@ -20,32 +21,31 @@ public class SpaceController {
     private final SpaceService spaceService;
 
     @PostMapping
-    public ResponseEntity<Long> createSpace(@RequestBody CreateSpaceRequest request) {
+    public ResponseEntity<CommonResponse<Long>> createSpace(@RequestBody CreateSpaceRequest request) {
         Long spaceId = spaceService.createSpace(request);
-        return ResponseEntity.created(URI.create("/spaces/" + spaceId)).body(spaceId);
+        return ResponseEntity.created(URI.create("/spaces/" + spaceId))
+                .body(CommonResponse.success(spaceId));
     }
 
     @GetMapping("/{spaceId}")
-    public ResponseEntity<SpaceDetailResponse> getSpace(@PathVariable Long spaceId) {
-        return ResponseEntity.ok(spaceService.getSpace(spaceId));
+    public ResponseEntity<CommonResponse<SpaceDetailResponse>> getSpace(@PathVariable Long spaceId) {
+        return ResponseEntity.ok(CommonResponse.success(spaceService.getSpace(spaceId)));
     }
 
     @GetMapping
-    public ResponseEntity<List<SpaceResponse>> getSpaces(@RequestParam Long userId) {
-        return ResponseEntity.ok(spaceService.getSpaces(userId));
+    public ResponseEntity<CommonResponse<List<SpaceResponse>>> getSpaces(@RequestParam Long userId) {
+        return ResponseEntity.ok(CommonResponse.success(spaceService.getSpaces(userId)));
     }
 
     @PutMapping("/{spaceId}")
-    public ResponseEntity<Void> updateSpace(@PathVariable Long spaceId, @RequestBody UpdateSpaceRequest request) {
+    public ResponseEntity<CommonResponse<Void>> updateSpace(@PathVariable Long spaceId, @RequestBody UpdateSpaceRequest request) {
         spaceService.updateSpace(spaceId, request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(CommonResponse.success(null));
     }
 
     @DeleteMapping("/{spaceId}")
-    public ResponseEntity<Void> deleteSpace(@PathVariable Long spaceId) {
+    public ResponseEntity<CommonResponse<Void>> deleteSpace(@PathVariable Long spaceId) {
         spaceService.deleteSpace(spaceId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(CommonResponse.success(null));
     }
-
-
 }

@@ -3,6 +3,10 @@ package jbnu.jbnupms.domain.user.service;
 import jbnu.jbnupms.common.audit.UserAuditLogger;
 import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
+<<<<<<< feat/user-refactor
+=======
+import jbnu.jbnupms.common.exception.CustomException;
+>>>>>>> main
 import jbnu.jbnupms.security.jwt.JwtTokenProvider;
 import jbnu.jbnupms.domain.user.dto.LoginRequest;
 import jbnu.jbnupms.domain.user.dto.RegisterRequest;
@@ -70,8 +74,17 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        if (user.getIsDeleted()) {
+<<<<<<< feat/common-response
+        if (user.getDeletedAt() != null) {
             throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
+        if (user.getIsDeleted()) {
+<<<<<<< feat/user-refactor
+            throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+=======
+            throw new GlobalException(ErrorCode.USER_ALREADY_DELETED);
+>>>>>>> feat/user-refactor
+>>>>>>> main
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -100,10 +113,20 @@ public class AuthService {
             throw new CustomException(ErrorCode.EXPIRED_TOKEN);
         }
 
+<<<<<<< feat/user-refactor
         // todo: 에러코드 반환하지 않고 데이터베이스 에러로 전달되도록 수정
         // 리프레시 과정 이전에 확인된다면 리프레시에서 다시 확인할 필요 없음
         User user = userRepository.findActiveById(refreshToken.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+=======
+<<<<<<< feat/common-response
+        User user = userRepository.findById(refreshToken.getUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+=======
+        User user = userRepository.findActiveById(refreshToken.getUserId())
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+>>>>>>> feat/user-refactor
+>>>>>>> main
 
         // Access Token만 새로 생성
         String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail());
