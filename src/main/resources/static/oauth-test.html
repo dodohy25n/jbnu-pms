@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+    </style>
+</head>
+<body>
+<h1>Google OAuth 테스트</h1>
+<button onclick="loginWithGoogle()">Google 로그인</button>
+
+<script>
+    const API_BASE_URL = 'http://localhost:8080';
+
+    function loginWithGoogle() {
+        window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    }
+</script>
+</body>
+</html>
