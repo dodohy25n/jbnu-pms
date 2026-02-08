@@ -6,8 +6,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
-import jbnu.jbnupms.common.exception.ErrorCode;
 import jbnu.jbnupms.common.exception.CustomException;
+import jbnu.jbnupms.common.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,8 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration) {
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
+    ) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
@@ -43,7 +44,7 @@ public class JwtTokenProvider {
                 .claim("type", "access")
                 .issuedAt(now)
                 .expiration(expiration)
-                .signWith(key) // SignatureAlgorithm 제거
+                .signWith(key)
                 .compact();
     }
 
@@ -56,7 +57,7 @@ public class JwtTokenProvider {
                 .claim("type", "refresh")
                 .issuedAt(now)
                 .expiration(expiration)
-                .signWith(key)  // SignatureAlgorithm 제거
+                .signWith(key)
                 .compact();
     }
 
@@ -79,10 +80,10 @@ public class JwtTokenProvider {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser()  // parserBuilder() → parser()
-                .verifyWith(key)  // setSigningKey() → verifyWith()
+        return Jwts.parser()
+                .verifyWith(key)
                 .build()
-                .parseSignedClaims(token)  // parseClaimsJws() → parseSignedClaims()
-                .getPayload();  // getBody() → getPayload()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

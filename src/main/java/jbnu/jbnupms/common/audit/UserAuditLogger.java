@@ -20,7 +20,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class UserAuditLogger {
-
+    // todo: 스레드, 프로세스 관점에서 동시에 기록되면 어떻게 관리할지, 파일 저장 ELK 적용
     private final ObjectMapper objectMapper;
     private static final String LOG_DIR = "logs/user-audit";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");

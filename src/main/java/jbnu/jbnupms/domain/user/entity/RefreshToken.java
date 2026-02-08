@@ -41,4 +41,13 @@ public class RefreshToken {
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(this.expiresAt);
     }
+
+    // 토큰 업데이트 메서드 추가
+    public void updateToken(String token) {
+        this.token = token;
+    }
+
+    public void updateExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
 }

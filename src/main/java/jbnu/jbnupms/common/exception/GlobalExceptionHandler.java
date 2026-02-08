@@ -5,11 +5,12 @@ import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.common.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import javax.naming.AuthenticationException;
+import java.nio.file.AccessDeniedException;
 
 @RestControllerAdvice
 @Slf4j
@@ -18,7 +19,7 @@ public class GlobalExceptionHandler {
     // 일반 에러
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<CommonResponse<ErrorResponse>> handleCustomException(CustomException e,
-            HttpServletRequest request) {
+                                                                               HttpServletRequest request) {
         ErrorCode errorCode = e.getErrorCode();
 
         log.warn("[CustomException] url: {} | errorType: {} | message: {}", request.getRequestURI(),

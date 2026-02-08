@@ -59,7 +59,7 @@ public class UserService {
         // 비밀번호 업데이트
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             // 소셜 로그인 사용자는 비밀번호 변경 불가
-            if (!user.getProvider().equals("EMAIL")) {
+            if (!user.getProvider().contains("EMAIL")) {
                 throw new CustomException(ErrorCode.SOCIAL_USER_PASSWORD_CHANGE);
             }
 
@@ -97,24 +97,45 @@ public class UserService {
 
         User user = findActiveUserById(targetUserId);
 
-        // 1. users 테이블의 isDeleted를 true로 변경
-        user.softDelete();
-        userRepository.save(user);
+        // 탈퇴 전 원본 이메일 저장 (감사 로그용)
+        String originalEmail = user.getEmail();
 
-        // 2. withdrawn_users 테이블에 정보 저장
+        // 1. withdrawn_users 테이블에 정보 저장 (원본 이메일)
         WithdrawnUser withdrawnUser = WithdrawnUser.builder()
-                .email(user.getEmail())
+                .email(originalEmail)
                 .reason(reason)
                 .build();
         withdrawnUserRepository.save(withdrawnUser);
 
+        // 2. users 테이블의 사용자 정보를 ghost 유저로 변환
+        convertToGhost(user);
+        userRepository.save(user);
+
         // 3. 리프레시 토큰 삭제
         refreshTokenRepository.deleteByUserId(targetUserId);
 
-        // 4. 감사 로그 기록
-        auditLogger.logDelete(requestUserId, targetUserId, user.getEmail(), reason);
+        // 4. 감사 로그 기록 (원본 이메일로)
+        auditLogger.logDelete(requestUserId, targetUserId, originalEmail, reason);
 
-        log.info("User deleted successfully: userId={}, email={}", targetUserId, user.getEmail());
+        log.info("User converted to ghost: userId={}, originalEmail={}, ghostEmail={}",
+                targetUserId, originalEmail, user.getEmail());
+    }
+
+    /** 회원 탈퇴 시 사용자 정보를 ghost 유저로 변환
+    * email: deleted{userId}@ghost.local (재가입 가능하도록 중복 방지)
+    * name: "탈퇴한 사용자" (UI에 표시될 이름)
+    * provider: "DELETED" (탈퇴 상태 표시)
+    * isDeleted: true
+    * (else: null)
+    */
+    private void convertToGhost(User user) {
+        user.updateEmail("deleted" + user.getId() + "@ghost.local");
+        user.updatePassword(null);
+        user.updateName("탈퇴한 사용자");
+        user.updateProfileImage(null);
+        user.setProviderId(null);
+        user.setProvider("DELETED");
+        user.softDelete();
     }
 
     private User findActiveUserById(Long userId) {
