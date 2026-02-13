@@ -95,14 +95,24 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 멤버 탈퇴
+    // 스페이스 탈퇴 (본인)
+    @DeleteMapping("/{spaceId}/leave")
+    public ResponseEntity<CommonResponse<Void>> leaveSpace(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long spaceId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        spaceService.leaveSpace(userId, spaceId);
+        return ResponseEntity.ok(CommonResponse.success(null));
+    }
+
+    // 스페이스 멤버 추방 (관리자)
     @DeleteMapping("/{spaceId}/members/{targetUserId}")
-    public ResponseEntity<CommonResponse<Void>> removeMember(
+    public ResponseEntity<CommonResponse<Void>> expelMember(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long spaceId,
             @PathVariable Long targetUserId) {
         Long userId = Long.parseLong(userDetails.getUsername());
-        spaceService.removeMember(userId, spaceId, targetUserId);
+        spaceService.expelMember(userId, spaceId, targetUserId);
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 }

@@ -12,16 +12,16 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class TaskUpdateRequest {
-
+    
     private String title;
-
+    
     private String description;
-
+    
     private TaskStatus status;
-
+    
     private TaskPriority priority;
-
+    
     private LocalDateTime dueDate;
-
+    
     private Double progress;
 }

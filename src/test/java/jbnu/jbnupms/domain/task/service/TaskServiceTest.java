@@ -109,7 +109,7 @@ class TaskServiceTest {
                 .task(childTask)
                 .user(user)
                 .build());
-
+        
         // Force flush and clear to ensure data is fetched from DB
         em.flush();
         em.clear();
@@ -121,10 +121,10 @@ class TaskServiceTest {
         assertThat(tasks).hasSize(1);
         TaskResponse parentResponse = tasks.get(0);
         assertThat(parentResponse.getId()).isEqualTo(parentTask.getId());
-
+        
         List<TaskResponse> children = parentResponse.getChildren();
         assertThat(children).hasSize(1);
-
+        
         TaskResponse childResponse = children.get(0);
         assertThat(childResponse.getId()).isEqualTo(childTask.getId());
         assertThat(childResponse.getAssignees()).isNotEmpty();

@@ -38,7 +38,7 @@ public class TaskService {
     public Long createTask(Long userId, TaskCreateRequest request) {
         User user = this.getUser(userId);
         Project project = this.getProject(request.getProjectId());
-
+        
         // 프로젝트 멤버인지 확인
         this.validateProjectMember(project.getId(), user.getId());
 
@@ -46,7 +46,7 @@ public class TaskService {
         if (request.getParentId() != null) {
             parent = taskRepository.findById(request.getParentId())
                     .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "상위 태스크를 찾을 수 없습니다."));
-
+            
             // 상위 태스크가 같은 프로젝트인지 확인
             if (!parent.getProject().getId().equals(project.getId())) {
                 throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "상위 태스크가 다른 프로젝트에 속해 있습니다.");
@@ -82,16 +82,16 @@ public class TaskService {
         this.validateProjectMember(projectId, userId);
 
         List<Task> rootTasks = taskRepository.findRootTasksByProjectId(projectId);
-
+        
         // 프로젝트 내 모든 담당자 조회 후 Map으로 그룹화
         List<TaskAssignee> allAssignees = taskAssigneeRepository.findAllByTask_ProjectId(projectId);
         Map<Long, List<TaskAssignee>> assigneeMap = allAssignees.stream()
                 .collect(Collectors.groupingBy(ta -> ta.getTask().getId()));
-
+        
         // Root Task 목록 스트림으로 순회하며 Map 전달
         return rootTasks.stream()
-                .map(task -> TaskResponse.from(task, assigneeMap))
-                .collect(Collectors.toList());
+            .map(task -> TaskResponse.from(task, assigneeMap))
+            .collect(Collectors.toList());
     }
 
     // 태스크 단건 조회
@@ -99,7 +99,7 @@ public class TaskService {
         Task task = this.getTaskById(taskId);
         Long projectId = task.getProject().getId();
         this.validateProjectMember(projectId, userId);
-
+        
         // 프로젝트 내 모든 담당자 조회 후 Map으로 그룹화 (하위 작업 담당자 포함을 위해)
         List<TaskAssignee> allAssignees = taskAssigneeRepository.findAllByTask_ProjectId(projectId);
         Map<Long, List<TaskAssignee>> assigneeMap = allAssignees.stream()
@@ -129,7 +129,7 @@ public class TaskService {
     public void deleteTask(Long userId, Long taskId) {
         Task task = this.getTaskById(taskId);
         this.validateProjectMember(task.getProject().getId(), userId);
-
+        
         taskRepository.delete(task);
     }
 
@@ -149,7 +149,7 @@ public class TaskService {
         this.validateProjectMember(task.getProject().getId(), userId);
 
         User assignee = this.getUser(assigneeId);
-
+        
         taskAssigneeRepository.deleteByTaskAndUser(task, assignee);
     }
 

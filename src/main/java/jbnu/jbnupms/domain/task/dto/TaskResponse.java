@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 public class TaskResponse {
-
+    
     private Long id;
     private Long projectId;
     private Long parentId;
@@ -47,7 +47,7 @@ public class TaskResponse {
                 .progress(task.getProgress())
                 .dueDate(task.getDueDate())
                 .creator(UserResponse.from(task.getCreator()))
-                .assignees(taskAssignees != null ?
+                .assignees(taskAssignees != null ? 
                         taskAssignees.stream()
                                 .map(ta -> UserResponse.from(ta.getUser()))
                                 .collect(Collectors.toList()) : null)
@@ -62,7 +62,7 @@ public class TaskResponse {
 
     // 담당자 정보 포함하지 않는 변환
     public static TaskResponse from(Task task) {
-        return from(task, Collections.emptyMap());
+         return from(task, Collections.emptyMap());
     }
 
     public static TaskResponse from(Task task, Map<Long, List<TaskAssignee>> assigneeMap) {

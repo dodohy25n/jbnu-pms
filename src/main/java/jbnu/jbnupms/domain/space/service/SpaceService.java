@@ -41,7 +41,7 @@ public class SpaceService {
                         .name(request.getName())
                         .description(request.getDescription())
                         .owner(owner)
-                        .build();
+                                .build();
 
                 Space savedSpace = spaceRepository.save(space);
 
@@ -152,27 +152,24 @@ public class SpaceService {
                 member.updateRole(request.getRole());
         }
 
-        // 스페이스 멤버 탈퇴
+        // 스페이스 탈퇴 (본인)
         @Transactional
-        public void removeMember(Long userId, Long spaceId, Long targetUserId) {
+        public void leaveSpace(Long userId, Long spaceId) {
+                SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(userId, spaceId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스에 참여하고 있지 않습니다."));
 
-                // 본인이 탈퇴하는 경우
-                if (userId.equals(targetUserId)) {
-                        SpaceMember member = spaceMemberRepository.findBySpaceId(spaceId).stream()
-                                .filter(m -> m.getUser().getId().equals(userId))
-                                .findFirst()
-                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-                        spaceMemberRepository.delete(member);
-                        return;
-                }
+                spaceMemberRepository.delete(member);
+        }
 
-                // 타인을 추방하는 경우 리더인지 확인
+        // 스페이스 멤버 추방 (관리자 권한 필요)
+        @Transactional
+        public void expelMember(Long userId, Long spaceId, Long targetUserId) {
+                // 관리자 권한 확인
                 validateAdminPermission(userId, spaceId);
 
-                SpaceMember targetMember = spaceMemberRepository.findBySpaceId(spaceId).stream()
-                        .filter(m -> m.getUser().getId().equals(targetUserId))
-                        .findFirst()
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                // 추방 대상 멤버 조회
+                SpaceMember targetMember = spaceMemberRepository.findByUserIdAndSpaceId(targetUserId, spaceId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "해당 멤버를 찾을 수 없습니다."));
 
                 spaceMemberRepository.delete(targetMember);
         }
