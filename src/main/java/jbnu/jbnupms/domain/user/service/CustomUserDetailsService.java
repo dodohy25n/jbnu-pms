@@ -35,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     public User getUserById(Long userId) {
-        return userRepository.findActiveById(userId)
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

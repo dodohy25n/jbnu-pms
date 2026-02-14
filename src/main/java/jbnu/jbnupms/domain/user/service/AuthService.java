@@ -150,7 +150,7 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN));
 
         // refresh token에 이메일이 포함되지 않으므로 access token 생성에 필요한 이메일을 User로 조회
-        User user = userRepository.findActiveById(refreshToken.getUserId())
+        User user = userRepository.findById(refreshToken.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // access token만 새로 생성

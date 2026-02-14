@@ -38,7 +38,7 @@ public class ProjectService {
         // 프로젝트 생성
         @Transactional
         public Long createProject(Long userId, ProjectCreateRequest request) {
-                User user = userRepository.findActiveById(userId)
+                User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 // Space 존재 확인
@@ -85,7 +85,7 @@ public class ProjectService {
                 Project project = projectRepository.findById(projectId)
                                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-                User user = userRepository.findActiveById(userId)
+                User user = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 // 멤버인지 확인
@@ -151,7 +151,7 @@ public class ProjectService {
 
                 validateLeaderPermission(userId, projectId);
 
-                User targetUser = userRepository.findActiveById(targetUserId)
+                User targetUser = userRepository.findById(targetUserId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 Project project = projectRepository.findById(projectId)

@@ -72,7 +72,7 @@ public class SpaceService {
                 Space space = spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-                User user = userRepository.findActiveById(userId)
+                User user = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 // 멤버인지 확인
@@ -140,7 +140,7 @@ public class SpaceService {
 
                 validateAdminPermission(userId, spaceId);
 
-                User targetUser = userRepository.findActiveById(targetUserId)
+                User targetUser = userRepository.findById(targetUserId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 Space space = spaceRepository.findById(spaceId)

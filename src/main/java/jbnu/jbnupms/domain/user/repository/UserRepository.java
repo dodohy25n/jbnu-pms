@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // ID로 사용자 조회 - 삭제되지 않은 사용자만
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.isDeleted = false")
-    Optional<User> findActiveById(Long id);
+    Optional<User> findById(Long id);
 
     // 모든 사용자 조회 - 삭제된 사용자 포함
     @Query("SELECT u FROM User u WHERE u.id = :id")

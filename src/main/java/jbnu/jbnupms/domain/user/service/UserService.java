@@ -139,7 +139,7 @@ public class UserService {
     }
 
     private User findActiveUserById(Long userId) {
-        User user = userRepository.findActiveById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getIsDeleted()) {
