@@ -22,6 +22,11 @@ public enum ErrorCode {
     VERIFICATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다."),
     VERIFICATION_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
     VERIFICATION_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
+    // Comment 관련 - 400
+    COMMENT_TASK_MISMATCH(HttpStatus.BAD_REQUEST, "댓글과 작업이 일치하지 않습니다."),
+    COMMENT_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "대댓글은 1단계까지만 가능합니다."),
+    COMMENT_HAS_REPLIES(HttpStatus.BAD_REQUEST, "대댓글이 있는 댓글은 삭제할 수 없습니다."),
+
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 발송에 실패했습니다."),
 
     // 401 Unauthorized
@@ -42,10 +47,15 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."), // Existing (Duplicate with FORBIDDEN)
     SOCIAL_USER_PASSWORD_CHANGE(HttpStatus.FORBIDDEN, "소셜 로그인 사용자는 비밀번호를 변경할 수 없습니다."),
+    TASK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "작업에 대한 접근 권한이 없습니다."),
+    COMMENT_UNAUTHORIZED(HttpStatus.FORBIDDEN, "댓글에 대한 권한이 없습니다."),
 
     // 404 Not Found
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 작업을 찾을 수 없습니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 댓글을 찾을 수 없습니다."),
+
 
     // 409 Conflict
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "데이터가 이미 존재합니다."),
