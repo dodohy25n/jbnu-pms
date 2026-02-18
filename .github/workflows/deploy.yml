@@ -51,10 +51,7 @@ jobs:
           script: |
             cd ~/jbnu-pms
             
-            # GitHub Container Registry 로그인
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # 최신 이미지 pull
+            # 최신 이미지 pull (Public 이미지이므로 로그인 불필요)
             docker compose pull app
             
             # 무중단 재시작
