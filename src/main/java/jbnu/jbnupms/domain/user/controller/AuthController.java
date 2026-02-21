@@ -2,8 +2,8 @@ package jbnu.jbnupms.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.user.dto.*;
 import jbnu.jbnupms.domain.user.service.AuthService;
@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -20,6 +21,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
     private final AuthService authService;
@@ -33,7 +35,6 @@ public class AuthController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 인증 코드 확인 (선택적 - 프론트에서 즉시 피드백용)
     @Operation(summary = "인증 코드 확인")
     @PostMapping("/verification/verify")
     public ResponseEntity<CommonResponse<Void>> verifyCode(
@@ -56,7 +57,7 @@ public class AuthController {
     public ResponseEntity<CommonResponse<EmailCheckResponse>> checkEmail(
             @RequestParam
             @NotBlank(message = "이메일은 필수입니다.")
-            @Pattern(
+            @Email(
                     regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$",
                     message = "올바른 이메일 형식이 아닙니다."
             )

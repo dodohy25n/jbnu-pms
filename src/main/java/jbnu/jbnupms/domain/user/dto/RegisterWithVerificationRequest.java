@@ -1,6 +1,7 @@
 package jbnu.jbnupms.domain.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -15,7 +16,7 @@ public class RegisterWithVerificationRequest {
 
     @Schema(example = "user@jbnu.ac.kr")
     @NotBlank(message = "이메일은 필수입니다.")
-    @Pattern(
+    @Email(
             regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$",
             message = "올바른 이메일 형식이 아닙니다."
     )
