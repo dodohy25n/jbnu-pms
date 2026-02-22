@@ -8,9 +8,10 @@ import jbnu.jbnupms.domain.file.entity.TaskFile;
 import jbnu.jbnupms.domain.file.repository.ProjectFileRepository;
 import jbnu.jbnupms.domain.file.repository.TaskFileRepository;
 import jbnu.jbnupms.domain.project.entity.Project;
+import jbnu.jbnupms.domain.project.entity.ProjectMember;
+import jbnu.jbnupms.domain.project.entity.ProjectRole;
 import jbnu.jbnupms.domain.project.repository.ProjectMemberRepository;
 import jbnu.jbnupms.domain.task.entity.Task;
-import jbnu.jbnupms.domain.task.repository.TaskAssigneeRepository;
 import jbnu.jbnupms.domain.task.repository.TaskRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
@@ -32,7 +33,6 @@ public class TaskFileService {
     private final TaskFileRepository taskFileRepository;
     private final ProjectFileRepository projectFileRepository;
     private final TaskRepository taskRepository;
-    private final TaskAssigneeRepository taskAssigneeRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
     private final S3FileService s3FileService;
@@ -53,8 +53,15 @@ public class TaskFileService {
         User uploader = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 태스크 접근 권한 확인
+        // 태스크 접근 권한 확인 (프로젝트 멤버인지)
         validateTaskAccess(task, userId);
+
+        // VIEWER는 파일 업로드 불가
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(project.getId(), userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_ACCESS_DENIED));
+        if (member.getRole() == ProjectRole.VIEWER) {
+            throw new CustomException(ErrorCode.VIEWER_WRITE_ACCESS_DENIED);
+        }
 
         // S3에 파일 업로드
         String fileUrl = s3FileService.uploadFile(file, "project/" + project.getId() + "/task/" + taskId);
@@ -78,7 +85,7 @@ public class TaskFileService {
                 .fileName(file.getOriginalFilename())
                 .fileUrl(fileUrl)
                 .fileSize(file.getSize())
-                .taskFileId(savedTaskFile.getId())  // taskFileId 저장!
+                .taskFileId(savedTaskFile.getId())
                 .build();
 
         projectFileRepository.save(projectFile);
@@ -97,7 +104,7 @@ public class TaskFileService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
-        // 태스크 접근 권한 확인
+        // 태스크 접근 권한 확인 (VIEWER 포함 조회 가능)
         validateTaskAccess(task, userId);
 
         List<TaskFile> taskFiles = taskFileRepository.findByTaskId(taskId);
@@ -144,22 +151,14 @@ public class TaskFileService {
     }
 
     /**
-     * 태스크 접근 권한 확인
+     * Task 접근 권한 확인
+     * 프로젝트 멤버인지만 확인 (담당자 여부와 무관하게 동일 권한)
      */
     private void validateTaskAccess(Task task, Long userId) {
-        // 태스크 담당자인지 확인
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        boolean isAssignee = taskAssigneeRepository.existsByTaskAndUser(task, user);
-
-        if (!isAssignee) {
-            // 태스크 담당자가 아니면 프로젝트 멤버인지 확인
-            boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(
-                    task.getProject().getId(), userId);
-            if (!isProjectMember) {
-                throw new CustomException(ErrorCode.TASK_ACCESS_DENIED);
-            }
+        boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(
+                task.getProject().getId(), userId);
+        if (!isProjectMember) {
+            throw new CustomException(ErrorCode.TASK_ACCESS_DENIED);
         }
     }
 }

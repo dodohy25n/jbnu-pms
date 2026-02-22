@@ -1,16 +1,20 @@
 package jbnu.jbnupms.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.common.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.naming.AuthenticationException;
-import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
@@ -35,7 +39,7 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.fail(errorResponse));
     }
 
-    // 검증 에러
+    // @RequestBody 검증 에러 (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<CommonResponse<ErrorResponse>> handleValidationException(
             MethodArgumentNotValidException e,
@@ -47,8 +51,39 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = ErrorResponse.of(
                 errorCode,
-                e.getBindingResult(), // 실패한 필드 정보들
+                e.getBindingResult(),
                 request.getRequestURI());
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(CommonResponse.fail(errorResponse));
+    }
+
+    // @RequestParam 검증 에러 (@Validated + @Email, @Pattern 등)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleConstraintViolationException(
+            ConstraintViolationException e,
+            HttpServletRequest request) {
+
+        ErrorCode errorCode = ErrorCode.INVALID_EMAIL_FORMAT;
+
+        log.info("[ConstraintViolationException] url: {} | message: {}", request.getRequestURI(), e.getMessage());
+
+        List<ErrorResponse.ErrorDetail> details = e.getConstraintViolations().stream()
+                .map(v -> ErrorResponse.ErrorDetail.builder()
+                        .field(v.getPropertyPath().toString())
+                        .value(v.getInvalidValue() == null ? "" : v.getInvalidValue().toString())
+                        .reason(v.getMessage())
+                        .build())
+                .collect(Collectors.toList());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .code(errorCode.name())
+                .message(errorCode.getMessage())
+                .details(details)
+                .build();
 
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
@@ -81,7 +116,7 @@ public class GlobalExceptionHandler {
             AccessDeniedException e,
             HttpServletRequest request) {
 
-        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
+        ErrorCode errorCode = ErrorCode.FORBIDDEN;
 
         log.info("[AccessDeniedException] url: {} | message: {}", request.getRequestURI(), e.getMessage());
 

@@ -4,10 +4,11 @@ import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
 import jbnu.jbnupms.domain.file.dto.FileResponse;
 import jbnu.jbnupms.domain.file.entity.ProjectFile;
-import jbnu.jbnupms.domain.file.entity.TaskFile;
 import jbnu.jbnupms.domain.file.repository.ProjectFileRepository;
 import jbnu.jbnupms.domain.file.repository.TaskFileRepository;
 import jbnu.jbnupms.domain.project.entity.Project;
+import jbnu.jbnupms.domain.project.entity.ProjectMember;
+import jbnu.jbnupms.domain.project.entity.ProjectRole;
 import jbnu.jbnupms.domain.project.repository.ProjectMemberRepository;
 import jbnu.jbnupms.domain.project.repository.ProjectRepository;
 import jbnu.jbnupms.domain.user.entity.User;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,8 +48,12 @@ public class ProjectFileService {
         User uploader = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 프로젝트 접근 권한 확인
-        validateProjectAccess(projectId, userId);
+        // 프로젝트 접근 권한 확인 + VIEWER는 업로드 불가
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_ACCESS_DENIED));
+        if (member.getRole() == ProjectRole.VIEWER) {
+            throw new CustomException(ErrorCode.VIEWER_WRITE_ACCESS_DENIED);
+        }
 
         // S3에 파일 업로드
         String fileUrl = s3FileService.uploadFile(file, "project/" + projectId);
@@ -74,7 +78,7 @@ public class ProjectFileService {
      * 프로젝트 직접 업로드 파일만 조회 (태스크 파일 제외)
      */
     public List<FileResponse> getProjectFiles(Long projectId, Long userId) {
-        // 프로젝트 접근 권한 확인
+        // 프로젝트 접근 권한 확인 (VIEWER 포함 조회 가능)
         validateProjectAccess(projectId, userId);
 
         List<ProjectFile> projectFiles = projectFileRepository.findByProjectId(projectId);
@@ -90,7 +94,7 @@ public class ProjectFileService {
      * 프로젝트 전체 파일 조회 (프로젝트 직접 파일 + 태스크 파일 모두)
      */
     public List<FileResponse> getAllProjectFiles(Long projectId, Long userId) {
-        // 프로젝트 접근 권한 확인
+        // 프로젝트 접근 권한 확인 (VIEWER 포함 조회 가능)
         validateProjectAccess(projectId, userId);
 
         // project_files 테이블에 프로젝트 직접 파일 + 태스크 파일이 모두 있음
@@ -139,6 +143,7 @@ public class ProjectFileService {
 
     /**
      * 프로젝트 접근 권한 확인
+     * 모든 멤버(ADMIN, MEMBER, VIEWER) 조회 가능
      */
     private void validateProjectAccess(Long projectId, Long userId) {
         boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);

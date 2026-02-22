@@ -12,6 +12,7 @@ public enum ErrorCode {
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."), // Existing
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "입력값 유효성 검사에 실패했습니다."),
+    INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "올바른 이메일 형식이 아닙니다."),
     INVALID_QUERY_PARAM(HttpStatus.BAD_REQUEST, "유효하지 않은 쿼리 파라미터입니다."),
     USER_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "이미 탈퇴한 사용자입니다."), // Existing
     PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."), // Existing
@@ -57,6 +58,7 @@ public enum ErrorCode {
     TASK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "작업에 대한 접근 권한이 없습니다."),
     COMMENT_UNAUTHORIZED(HttpStatus.FORBIDDEN, "댓글에 대한 권한이 없습니다."),
     FILE_DELETE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "파일을 삭제할 권한이 없습니다."),
+    VIEWER_WRITE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "읽기 전용(VIEWER) 권한으로는 해당 작업을 수행할 수 없습니다."), // 추가
 
     // 404 Not Found
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),

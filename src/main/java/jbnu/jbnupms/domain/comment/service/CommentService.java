@@ -7,9 +7,10 @@ import jbnu.jbnupms.domain.comment.dto.CommentResponse;
 import jbnu.jbnupms.domain.comment.dto.CommentUpdateRequest;
 import jbnu.jbnupms.domain.comment.entity.Comment;
 import jbnu.jbnupms.domain.comment.repository.CommentRepository;
+import jbnu.jbnupms.domain.project.entity.ProjectMember;
+import jbnu.jbnupms.domain.project.entity.ProjectRole;
 import jbnu.jbnupms.domain.project.repository.ProjectMemberRepository;
 import jbnu.jbnupms.domain.task.entity.Task;
-import jbnu.jbnupms.domain.task.repository.TaskAssigneeRepository;
 import jbnu.jbnupms.domain.task.repository.TaskRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
@@ -32,7 +33,6 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final TaskAssigneeRepository taskAssigneeRepository;
     private final ProjectMemberRepository projectMemberRepository;
 
     /**
@@ -48,8 +48,11 @@ public class CommentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // Task 접근 권한 확인 (Task의 Project에 속한 멤버인지)
+        // Task 접근 권한 확인 (프로젝트 멤버인지)
         validateTaskAccess(task, userId);
+
+        // VIEWER는 댓글 생성 불가
+        validateNotViewer(task.getProject().getId(), userId);
 
         Comment parent = null;
         if (request.getParentId() != null) {
@@ -166,20 +169,25 @@ public class CommentService {
 
     /**
      * Task 접근 권한 확인
-     * Task가 속한 Project의 멤버인지 확인
+     * 프로젝트 멤버인지만 확인 (담당자 여부와 무관하게 동일 권한)
      */
     private void validateTaskAccess(Task task, Long userId) {
-        // Task 담당자인지 확인
-        boolean isAssignee = taskAssigneeRepository.existsByTaskAndUser(task,
-                userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND)));
+        boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(
+                task.getProject().getId(), userId);
+        if (!isProjectMember) {
+            throw new CustomException(ErrorCode.TASK_ACCESS_DENIED);
+        }
+    }
 
-        if (!isAssignee) {
-            // Task 담당자가 아니면 Project 멤버인지 확인
-            boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(
-                    task.getProject().getId(), userId);
-            if (!isProjectMember) {
-                throw new CustomException(ErrorCode.TASK_ACCESS_DENIED);
-            }
+    /**
+     * VIEWER 역할 차단
+     * VIEWER는 읽기 전용이므로 쓰기 작업(댓글 생성) 불가
+     */
+    private void validateNotViewer(Long projectId, Long userId) {
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_ACCESS_DENIED));
+        if (member.getRole() == ProjectRole.VIEWER) {
+            throw new CustomException(ErrorCode.VIEWER_WRITE_ACCESS_DENIED);
         }
     }
 }
