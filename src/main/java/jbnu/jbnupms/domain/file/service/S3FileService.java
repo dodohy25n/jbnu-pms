@@ -16,6 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 @Slf4j
 @Service
@@ -60,6 +64,21 @@ public class S3FileService {
         } catch (Exception e) {
             log.error("S3 파일 삭제 실패: {}", e.getMessage());
             throw new CustomException(ErrorCode.FILE_DELETE_FAILED);
+        }
+    }
+
+    /**
+     * S3에서 파일 다운로드
+     */
+    public Resource downloadFile(String fileUrl) {
+        try {
+            String fileName = extractFileNameFromUrl(fileUrl);
+            S3Object s3Object = amazonS3.getObject(bucket, fileName);
+            S3ObjectInputStream inputStream = s3Object.getObjectContent();
+            return new InputStreamResource(inputStream);
+        } catch (Exception e) {
+            log.error("S3 파일 다운로드 실패: {}", e.getMessage());
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
     }
 
