@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 
 @RestController
 @RequestMapping("/projects/{projectId}/files")
@@ -61,5 +63,24 @@ public class ProjectFileController {
         Long userId = Long.parseLong(userDetails.getUsername());
         projectFileService.deleteProjectFile(projectId, fileId, userId);
         return ResponseEntity.ok(CommonResponse.success(null));
+    }
+
+    @Operation(summary = "프로젝트 파일 다운로드")
+    @GetMapping("/{fileId}/download")
+    public ResponseEntity<Resource> downloadProjectFile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long fileId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        Resource resource = projectFileService.downloadProjectFile(projectId, fileId,
+                userId);
+
+        // s3FileService.downloadFile 등에서 실제 원본 파일명을 헤더에 넣어주려면 여기서 가공하거나,
+        // 간단히 다운로드용 헤더를 추가합니다. (DB에서 파일명을 다시 조회할 수도 있지만 여기서는 생략)
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileId + "\"")
+                .body(resource);
     }
 }
