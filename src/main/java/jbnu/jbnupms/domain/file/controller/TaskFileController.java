@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 
 @RestController
 @RequestMapping("/tasks/{taskId}/files")
@@ -51,5 +53,21 @@ public class TaskFileController {
         Long userId = Long.parseLong(userDetails.getUsername());
         taskFileService.deleteTaskFile(taskId, fileId, userId);
         return ResponseEntity.ok(CommonResponse.success(null));
+    }
+
+    @Operation(summary = "태스크 파일 다운로드")
+    @GetMapping("/{fileId}/download")
+    public ResponseEntity<Resource> downloadTaskFile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long taskId,
+            @PathVariable Long fileId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        Resource resource = taskFileService.downloadTaskFile(taskId, fileId, userId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileId + "\"")
+                .body(resource);
     }
 }

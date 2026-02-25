@@ -70,6 +70,11 @@ public class UserService {
             auditLogger.logChangePassword(user.getId());
         }
 
+        // 역할 업데이트
+        if (request.getPosition() != null) {
+            user.updatePosition(request.getPosition());
+        }
+
         userRepository.save(user);
 
         // 프로필 업데이트 로그

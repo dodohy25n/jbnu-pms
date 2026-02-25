@@ -15,4 +15,7 @@ public class UpdateUserRequest {
 
     @Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
     private String password;
+
+    @Size(max = 100, message = "역할은 100자 이하여야 합니다.")
+    private String position;
 }

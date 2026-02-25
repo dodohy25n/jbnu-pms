@@ -17,6 +17,7 @@ public class UserResponse {
     private String name;
     private String profileImage;
     private String provider;
+    private String position;
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
@@ -25,6 +26,7 @@ public class UserResponse {
                 .name(user.getName())
                 .profileImage(user.getProfileImage())
                 .provider(user.getProvider())
+                .position(user.getPosition())  // 추가
                 .build();
     }
 }

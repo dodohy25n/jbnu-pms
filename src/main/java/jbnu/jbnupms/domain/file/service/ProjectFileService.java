@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.core.io.Resource;
 
 @Slf4j
 @Service
@@ -139,6 +140,27 @@ public class ProjectFileService {
 
         log.info("프로젝트 파일 삭제 완료: fileId={}, projectId={}, userId={}",
                 fileId, projectId, userId);
+    }
+
+    /**
+     * 프로젝트 파일 다운로드
+     */
+    public Resource downloadProjectFile(Long projectId, Long fileId, Long userId) {
+        // 프로젝트 접근 권한 확인 (VIEWER 포함 다운로드 가능)
+        validateProjectAccess(projectId, userId);
+
+        // 파일 존재 확인
+        ProjectFile projectFile = projectFileRepository.findByIdWithProjectAndUploader(fileId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+        // 프로젝트 ID 일치 확인
+        if (!projectFile.getProject().getId().equals(projectId)) {
+            throw new CustomException(ErrorCode.FILE_PROJECT_MISMATCH);
+        }
+
+        // S3에서 파일 스트림 가져오기
+        log.info("프로젝트 파일 다운로드 요청: fileId={}, projectId={}, userId={}", fileId, projectId, userId);
+        return s3FileService.downloadFile(projectFile.getFileUrl());
     }
 
     /**
