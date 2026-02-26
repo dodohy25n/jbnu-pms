@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.project.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -9,4 +10,6 @@ public class ProjectUpdateRequest {
 
     private String name;
     private String description;
+    private LocalDateTime dueDate;
+    private Boolean isPublic;
 }

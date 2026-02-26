@@ -29,6 +29,12 @@ public class CommentResponse {
     @Schema(description = "작성자 이메일", example = "user@example.com")
     private String userEmail;
 
+    @Schema(description = "작성자 직책/역할", example = "매니저")
+    private String userPosition;
+
+    @Schema(description = "작성자 프로필 이미지", example = "https://example.com/profile.jpg")
+    private String userProfileImage;
+
     @Schema(description = "부모 댓글 ID (대댓글인 경우)", example = "1", nullable = true)
     private Long parentId;
 
@@ -51,6 +57,8 @@ public class CommentResponse {
                 .userId(comment.getUser().getId())
                 .userName(comment.getUser().getName())
                 .userEmail(comment.getUser().getEmail())
+                .userPosition(comment.getUser().getPosition())
+                .userProfileImage(comment.getUser().getProfileImage())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())

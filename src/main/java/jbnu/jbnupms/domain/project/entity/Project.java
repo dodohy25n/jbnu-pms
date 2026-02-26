@@ -37,6 +37,12 @@ public class Project {
 
     private Double progress;
 
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
+    @Column(name = "is_public", nullable = false)
+    private Boolean isPublic = true;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -44,17 +50,23 @@ public class Project {
     private LocalDateTime deletedAt;
 
     @Builder
-    public Project(Space space, String name, String description) {
+    public Project(Space space, String name, String description, LocalDateTime dueDate, Boolean isPublic) {
         this.space = space;
         this.name = name;
         this.description = description;
+        this.dueDate = dueDate;
+        this.isPublic = (isPublic != null) ? isPublic : true;
         this.progress = 0.0;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String name, String description) {
+    public void update(String name, String description, LocalDateTime dueDate, Boolean isPublic) {
         this.name = name;
         this.description = description;
+        if (dueDate != null)
+            this.dueDate = dueDate;
+        if (isPublic != null)
+            this.isPublic = isPublic;
         this.updatedAt = LocalDateTime.now();
     }
 

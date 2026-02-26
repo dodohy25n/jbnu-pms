@@ -15,6 +15,7 @@ import java.util.Optional;
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
 
     boolean existsByProjectIdAndUserId(Long projectId, Long userId);
+
     boolean existsByProjectAndUser(Project project, User user);
 
     Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
@@ -22,4 +23,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     @Query("SELECT pm FROM ProjectMember pm JOIN FETCH pm.project p WHERE pm.user.id = :userId AND p.space.id = :spaceId")
     List<ProjectMember> findByUserIdAndSpaceId(@Param("userId") Long userId, @Param("spaceId") Long spaceId);
 
+    List<ProjectMember> findByProjectId(Long projectId);
+
+    List<ProjectMember> findByProjectIdIn(List<Long> projectIds);
 }

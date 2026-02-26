@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.project.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,4 +17,8 @@ public class ProjectCreateRequest {
     private String name;
 
     private String description;
+
+    private LocalDateTime dueDate;
+
+    private Boolean isPublic;
 }
