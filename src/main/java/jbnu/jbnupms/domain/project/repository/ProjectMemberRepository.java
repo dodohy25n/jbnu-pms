@@ -35,4 +35,10 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
         List<ProjectMember> findTop3RecentProjects(@Param("userId") Long userId, @Param("spaceId") Long spaceId, @Param("status") ProjectStatus status, Pageable pageable);
 
         List<ProjectMember> findByProjectIdIn(List<Long> projectIds);
+
+        // 캘린더용: 해당 유저가 멤버인 프로젝트 ID 목록에서 일괄 조회 (내 담당 여부 판별)
+        @Query("SELECT pm FROM ProjectMember pm WHERE pm.project.id IN :projectIds AND pm.user.id = :userId")
+        List<ProjectMember> findByProjectIdInAndUserId(
+                @Param("projectIds") List<Long> projectIds,
+                @Param("userId") Long userId);
 }

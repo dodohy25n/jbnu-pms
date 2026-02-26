@@ -31,4 +31,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                 @Param("startDate") LocalDateTime startDate,
                 @Param("endDate") LocalDateTime endDate,
                 @Param("doneStatus") TaskStatus doneStatus);
+
+        // 캘린더용: 여러 스페이스의 마감일 범위 내 태스크 조회 (N+1 방지: project/space fetch join)
+        @Query("SELECT t FROM Task t " +
+                "JOIN FETCH t.project p " +
+                "JOIN FETCH p.space s " +
+                "WHERE p.space.id IN :spaceIds " +
+                "AND t.dueDate >= :startDate AND t.dueDate <= :endDate")
+        List<Task> findTasksDueInMonth(
+                @Param("spaceIds") List<Long> spaceIds,
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate);
 }

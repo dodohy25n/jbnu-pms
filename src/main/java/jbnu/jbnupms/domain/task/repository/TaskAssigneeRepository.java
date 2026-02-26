@@ -90,6 +90,12 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssignee, Long
             @Param("doneStatus") TaskStatus doneStatus,
             @Param("startOfToday") LocalDateTime startOfToday);
 
+    // 캘린더용: 해당 유저가 담당인 태스크 ID 목록에서 일괄 조회 (내 담당 여부 판별)
+    @Query("SELECT ta FROM TaskAssignee ta WHERE ta.task.id IN :taskIds AND ta.user.id = :userId")
+    List<TaskAssignee> findByTaskIdInAndUserId(
+            @Param("taskIds") List<Long> taskIds,
+            @Param("userId") Long userId);
+
     // 내 작업 페이징 조회
     @Query(value = "SELECT ta FROM TaskAssignee ta " +
             "JOIN FETCH ta.task t " +
