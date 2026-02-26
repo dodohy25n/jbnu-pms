@@ -38,12 +38,14 @@ public class SpaceDetailResponse {
         private String userName;
         private String email;
         private String role;
+        private String profileImage;
 
         public MemberDto(SpaceMember spaceMember) {
             this.userId = spaceMember.getUser().getId();
             this.userName = spaceMember.getUser().getName();
             this.email = spaceMember.getUser().getEmail();
             this.role = spaceMember.getRole().name();
+            this.profileImage = spaceMember.getUser().getProfileImage();
         }
     }
 }

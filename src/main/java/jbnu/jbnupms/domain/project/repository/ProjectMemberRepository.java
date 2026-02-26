@@ -2,24 +2,37 @@ package jbnu.jbnupms.domain.project.repository;
 
 import jbnu.jbnupms.domain.project.entity.Project;
 import jbnu.jbnupms.domain.project.entity.ProjectMember;
+import jbnu.jbnupms.domain.project.entity.ProjectStatus;
 import jbnu.jbnupms.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
 
-    boolean existsByProjectIdAndUserId(Long projectId, Long userId);
-    boolean existsByProjectAndUser(Project project, User user);
+        boolean existsByProjectIdAndUserId(Long projectId, Long userId);
 
-    Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
+        boolean existsByProjectAndUser(Project project, User user);
 
-    @Query("SELECT pm FROM ProjectMember pm JOIN FETCH pm.project p WHERE pm.user.id = :userId AND p.space.id = :spaceId")
-    List<ProjectMember> findByUserIdAndSpaceId(@Param("userId") Long userId, @Param("spaceId") Long spaceId);
+        Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
 
+        @Query("SELECT pm FROM ProjectMember pm JOIN FETCH pm.project p WHERE pm.user.id = :userId AND p.space.id = :spaceId")
+        List<ProjectMember> findByUserIdAndSpaceId(@Param("userId") Long userId, @Param("spaceId") Long spaceId);
+
+        List<ProjectMember> findByProjectId(Long projectId);
+
+        @Query("SELECT pm FROM ProjectMember pm " +
+                        "JOIN FETCH pm.project p " +
+                        "WHERE pm.user.id = :userId " +
+                        "AND p.space.id = :spaceId " +
+                        "AND p.status = :status " +
+                        "ORDER BY pm.lastAccessedAt DESC")
+        List<ProjectMember> findTop3RecentProjects(@Param("userId") Long userId, @Param("spaceId") Long spaceId, @Param("status") ProjectStatus status, Pageable pageable);
+
+        List<ProjectMember> findByProjectIdIn(List<Long> projectIds);
 }

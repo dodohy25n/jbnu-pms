@@ -41,7 +41,7 @@ public class SpaceService {
                         .name(request.getName())
                         .description(request.getDescription())
                         .owner(owner)
-                                .build();
+                        .build();
 
                 Space savedSpace = spaceRepository.save(space);
 
@@ -134,6 +134,25 @@ public class SpaceService {
                 spaceMemberRepository.save(member);
         }
 
+        // 스페이스 멤버 목록만 따로 조회
+        public List<SpaceDetailResponse.MemberDto> getSpaceMembers(Long userId, Long spaceId) {
+                Space space = spaceRepository.findById(spaceId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+                // 멤버인지 확인
+                if (!spaceMemberRepository.existsBySpaceAndUser(space, user)) {
+                        throw new CustomException(ErrorCode.ACCESS_DENIED);
+                }
+
+                List<SpaceMember> members = spaceMemberRepository.findBySpaceId(spaceId);
+
+                return members.stream()
+                        .map(SpaceDetailResponse.MemberDto::new)
+                        .collect(Collectors.toList());
+        }
         // 스페이스 멤버 역할 변경
         @Transactional
         public void updateMemberRole(Long userId, Long spaceId, Long targetUserId, SpaceRoleUpdateRequest request) {

@@ -1,6 +1,7 @@
 package jbnu.jbnupms.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
+@Tag(name = "Auth", description = "인증/회원가입 API")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -55,13 +57,7 @@ public class AuthController {
     @Operation(summary = "이메일 중복 확인")
     @GetMapping("/check-email")
     public ResponseEntity<CommonResponse<EmailCheckResponse>> checkEmail(
-            @RequestParam
-            @NotBlank(message = "이메일은 필수입니다.")
-            @Email(
-                    regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$",
-                    message = "올바른 이메일 형식이 아닙니다."
-            )
-            String email) {
+            @RequestParam @NotBlank(message = "이메일은 필수입니다.") @Email(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$", message = "올바른 이메일 형식이 아닙니다.") String email) {
         return ResponseEntity.ok(CommonResponse.success(authService.checkEmailAvailability(email)));
     }
 

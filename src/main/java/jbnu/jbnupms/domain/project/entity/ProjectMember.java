@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -33,14 +35,22 @@ public class ProjectMember {
     @Column(length = 20, nullable = false)
     private ProjectRole role;
 
+    @Column(name = "last_accessed_at")
+    private LocalDateTime lastAccessedAt;
+
     @Builder
     public ProjectMember(Project project, User user, ProjectRole role) {
         this.project = project;
         this.user = user;
         this.role = role != null ? role : ProjectRole.MEMBER;
+        this.lastAccessedAt = LocalDateTime.now();
     }
 
     public void updateRole(ProjectRole role) {
         this.role = role;
+    }
+
+    public void updateLastAccessedAt() {
+        this.lastAccessedAt = LocalDateTime.now();
     }
 }

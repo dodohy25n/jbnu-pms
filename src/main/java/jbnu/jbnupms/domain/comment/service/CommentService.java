@@ -14,6 +14,8 @@ import jbnu.jbnupms.domain.task.entity.Task;
 import jbnu.jbnupms.domain.task.repository.TaskRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
+import jbnu.jbnupms.domain.space.entity.ActionType;
+import jbnu.jbnupms.domain.space.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ public class CommentService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ActivityLogService activityLogService;
 
     /**
      * 댓글 생성
@@ -79,6 +82,10 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
         log.info("댓글 생성 완료: commentId={}, taskId={}, userId={}", savedComment.getId(), task.getId(), userId);
+
+        activityLogService.logActivity(task.getProject().getSpace(), task.getProject().getId(),
+                task.getProject().getName(), task.getId(), task.getTitle(), ActionType.COMMENT_ADDED, user,
+                "새 댓글이 추가되었습니다.");
 
         return CommentResponse.from(savedComment);
     }
