@@ -1,5 +1,7 @@
 package jbnu.jbnupms.domain.task.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.task.dto.TaskCreateRequest;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Task", description = "태스크 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/tasks")
@@ -21,7 +24,7 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    // 태스크 생성
+    @Operation(summary = "태스크 생성")
     @PostMapping
     public ResponseEntity<CommonResponse<Long>> createTask(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -31,7 +34,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(taskId));
     }
 
-    // 프로젝트별 태스크 목록 조회
+    @Operation(summary = "프로젝트별 태스크 목록 조회")
     @GetMapping
     public ResponseEntity<CommonResponse<List<TaskResponse>>> getTasks(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -40,7 +43,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(taskService.getTasks(userId, projectId)));
     }
 
-    // 태스크 단건 조회
+    @Operation(summary = "태스크 단건 조회")
     @GetMapping("/{taskId}")
     public ResponseEntity<CommonResponse<TaskResponse>> getTask(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -49,7 +52,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(taskService.getTask(userId, taskId)));
     }
 
-    // 태스크 수정
+    @Operation(summary = "태스크 수정")
     @PutMapping("/{taskId}")
     public ResponseEntity<CommonResponse<Void>> updateTask(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -60,7 +63,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 태스크 삭제
+    @Operation(summary = "태스크 삭제")
     @DeleteMapping("/{taskId}")
     public ResponseEntity<CommonResponse<Void>> deleteTask(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -70,7 +73,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 담당자 추가
+    @Operation(summary = "담당자 추가")
     @PostMapping("/{taskId}/assignees")
     public ResponseEntity<CommonResponse<Void>> addAssignee(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -81,7 +84,7 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 담당자 삭제
+    @Operation(summary = "담당자 삭제")
     @DeleteMapping("/{taskId}/assignees/{assigneeId}")
     public ResponseEntity<CommonResponse<Void>> removeAssignee(
             @AuthenticationPrincipal UserDetails userDetails,

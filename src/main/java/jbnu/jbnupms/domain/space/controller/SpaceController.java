@@ -1,5 +1,7 @@
 package jbnu.jbnupms.domain.space.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.space.dto.SpaceCreateRequest;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Space", description = "스페이스 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/spaces")
@@ -24,7 +27,7 @@ public class SpaceController {
 
     private final SpaceService spaceService;
 
-    // 스페이스 생성
+    @Operation(summary = "스페이스 생성")
     @PostMapping
     public ResponseEntity<CommonResponse<Long>> createSpace(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -34,7 +37,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(spaceId));
     }
 
-    // 스페이스 조회
+    @Operation(summary = "스페이스 조회")
     @GetMapping("/{spaceId}")
     public ResponseEntity<CommonResponse<SpaceDetailResponse>> getSpace(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -43,7 +46,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(spaceService.getSpace(userId, spaceId)));
     }
 
-    // 스페이스 목록 조회
+    @Operation(summary = "스페이스 목록 조회")
     @GetMapping
     public ResponseEntity<CommonResponse<List<SpaceResponse>>> getSpaces(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -51,7 +54,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(spaceService.getSpaces(userId)));
     }
 
-    // 스페이스 수정
+    @Operation(summary = "스페이스 수정")
     @PutMapping("/{spaceId}")
     public ResponseEntity<CommonResponse<Void>> updateSpace(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -62,7 +65,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 삭제
+    @Operation(summary = "스페이스 삭제")
     @DeleteMapping("/{spaceId}")
     public ResponseEntity<CommonResponse<Void>> deleteSpace(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -72,7 +75,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 멤버 초대
+    @Operation(summary = "스페이스 멤버 초대")
     @PostMapping("/{spaceId}/members")
     public ResponseEntity<CommonResponse<Void>> inviteMember(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -83,7 +86,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 멤버 권한 수정
+    @Operation(summary = "스페이스 멤버 권한 수정")
     @PatchMapping("/{spaceId}/members/{targetUserId}")
     public ResponseEntity<CommonResponse<Void>> updateMemberRole(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -95,7 +98,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 탈퇴 (본인)
+    @Operation(summary = "스페이스 탈퇴 (본인)")
     @DeleteMapping("/{spaceId}/leave")
     public ResponseEntity<CommonResponse<Void>> leaveSpace(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -105,7 +108,7 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    // 스페이스 멤버 추방 (관리자)
+    @Operation(summary = "스페이스 멤버 추방 (관리자)")
     @DeleteMapping("/{spaceId}/members/{targetUserId}")
     public ResponseEntity<CommonResponse<Void>> expelMember(
             @AuthenticationPrincipal UserDetails userDetails,

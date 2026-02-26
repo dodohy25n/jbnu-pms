@@ -1,6 +1,7 @@
 package jbnu.jbnupms.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.user.dto.DeleteUserRequest;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "User", description = "사용자 API")
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -38,8 +40,7 @@ public class UserController {
     public ResponseEntity<CommonResponse<UserResponse>> updateUser(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long userId,
-            @Valid @RequestBody UpdateUserRequest request
-    ) {
+            @Valid @RequestBody UpdateUserRequest request) {
         Long requestUserId = Long.parseLong(userDetails.getUsername());
         return ResponseEntity.ok(CommonResponse.success(userService.updateUser(requestUserId, userId, request)));
     }
@@ -49,8 +50,7 @@ public class UserController {
     public ResponseEntity<CommonResponse<Void>> deleteUser(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long userId,
-            @Valid @RequestBody DeleteUserRequest request
-    ) {
+            @Valid @RequestBody DeleteUserRequest request) {
         Long requestUserId = Long.parseLong(userDetails.getUsername());
         userService.deleteUser(requestUserId, userId, request.getReason());
         return ResponseEntity.ok(CommonResponse.success(null));

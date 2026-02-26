@@ -1,6 +1,7 @@
 package jbnu.jbnupms.domain.file.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.file.dto.FileResponse;
 import jbnu.jbnupms.domain.file.service.TaskFileService;
@@ -16,6 +17,7 @@ import java.util.List;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 
+@Tag(name = "Task File", description = "태스크 파일 API")
 @RestController
 @RequestMapping("/tasks/{taskId}/files")
 @RequiredArgsConstructor

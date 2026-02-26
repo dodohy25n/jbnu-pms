@@ -1,6 +1,7 @@
 package jbnu.jbnupms.domain.comment.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.comment.dto.CommentCreateRequest;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Comment", description = "댓글 API")
 @RestController
 @RequestMapping("/comments")
 @RequiredArgsConstructor
