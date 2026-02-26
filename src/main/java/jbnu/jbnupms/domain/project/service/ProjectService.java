@@ -163,6 +163,26 @@ public class ProjectService {
                 projectMemberRepository.save(member);
         }
 
+        // 프로젝트 멤버 목록만 따로 조회
+        public List<ProjectResponse.MemberDto> getProjectMembers(Long userId, Long projectId) {
+                Project project = projectRepository.findById(projectId)
+                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+                // 멤버인지 확인
+                if (!projectMemberRepository.existsByProjectAndUser(project, user)) {
+                        throw new CustomException(ErrorCode.ACCESS_DENIED);
+                }
+
+                List<ProjectMember> members = projectMemberRepository.findByProjectId(projectId);
+
+                return members.stream()
+                                .map(ProjectResponse.MemberDto::new)
+                                .collect(Collectors.toList());
+        }
+
         // 프로젝트 멤버 역할 변경
         @Transactional
         public void updateMemberRole(Long userId, Long projectId, Long targetUserId, ProjectRoleUpdateRequest request) {
@@ -183,24 +203,25 @@ public class ProjectService {
                 member.updateRole(request.getRole());
         }
 
-        // 프로젝트 멤버 탈퇴
+        // 프로젝트 탈퇴 (본인)
         @Transactional
-        public void removeMember(Long userId, Long projectId, Long targetUserId) {
+        public void leaveProject(Long userId, Long projectId) {
+                ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND,
+                                                "해당 프로젝트에 참여하고 있지 않습니다."));
 
-                // 본인이 탈퇴하는 경우
-                if (userId.equals(targetUserId)) {
-                        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                                        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                projectMemberRepository.delete(member);
+        }
 
-                        projectMemberRepository.delete(member);
-                        return;
-                }
-
-                // 타인을 추방하는 경우 리더인지 확인
+        // 프로젝트 멤버 추방 (관리자 권한 필요)
+        @Transactional
+        public void expelMember(Long userId, Long projectId, Long targetUserId) {
+                // 관리자 권한 확인
                 validateLeaderPermission(userId, projectId);
 
+                // 추방 대상 멤버 조회
                 ProjectMember targetMember = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
-                                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "해당 멤버를 찾을 수 없습니다."));
 
                 projectMemberRepository.delete(targetMember);
         }

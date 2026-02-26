@@ -86,6 +86,15 @@ public class SpaceController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
+    @Operation(summary = "스페이스 멤버 목록 조회")
+    @GetMapping("/{spaceId}/members")
+    public ResponseEntity<CommonResponse<List<SpaceDetailResponse.MemberDto>>> getSpaceMembers(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long spaceId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        return ResponseEntity.ok(CommonResponse.success(spaceService.getSpaceMembers(userId, spaceId)));
+    }
+
     @Operation(summary = "스페이스 멤버 권한 수정")
     @PatchMapping("/{spaceId}/members/{targetUserId}")
     public ResponseEntity<CommonResponse<Void>> updateMemberRole(
@@ -118,4 +127,6 @@ public class SpaceController {
         spaceService.expelMember(userId, spaceId, targetUserId);
         return ResponseEntity.ok(CommonResponse.success(null));
     }
+
+
 }

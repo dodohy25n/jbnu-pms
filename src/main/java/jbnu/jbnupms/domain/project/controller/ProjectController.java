@@ -86,6 +86,15 @@ public class ProjectController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
+    @Operation(summary = "프로젝트 멤버 목록 조회")
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<CommonResponse<List<ProjectResponse.MemberDto>>> getProjectMembers(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long projectId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        return ResponseEntity.ok(CommonResponse.success(projectService.getProjectMembers(userId, projectId)));
+    }
+
     @Operation(summary = "프로젝트 멤버 권한 수정")
     @PatchMapping("/{projectId}/members/{targetUserId}")
     public ResponseEntity<CommonResponse<Void>> updateMemberRole(
@@ -98,14 +107,24 @@ public class ProjectController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    @Operation(summary = "프로젝트 멤버 탈퇴")
+    @Operation(summary = "프로젝트 탈퇴 (본인)")
+    @DeleteMapping("/{projectId}/leave")
+    public ResponseEntity<CommonResponse<Void>> leaveProject(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long projectId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        projectService.leaveProject(userId, projectId);
+        return ResponseEntity.ok(CommonResponse.success(null));
+    }
+
+    @Operation(summary = "프로젝트 멤버 추방 (관리자)")
     @DeleteMapping("/{projectId}/members/{targetUserId}")
-    public ResponseEntity<CommonResponse<Void>> removeMember(
+    public ResponseEntity<CommonResponse<Void>> expelMember(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long projectId,
             @PathVariable Long targetUserId) {
         Long userId = Long.parseLong(userDetails.getUsername());
-        projectService.removeMember(userId, projectId, targetUserId);
+        projectService.expelMember(userId, projectId, targetUserId);
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 }
