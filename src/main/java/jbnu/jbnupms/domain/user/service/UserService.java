@@ -3,6 +3,7 @@ package jbnu.jbnupms.domain.user.service;
 import jbnu.jbnupms.common.audit.UserAuditLogger;
 import jbnu.jbnupms.common.exception.ErrorCode;
 import jbnu.jbnupms.common.exception.CustomException;
+import jbnu.jbnupms.domain.file.service.S3FileService;
 import jbnu.jbnupms.domain.user.dto.UpdateUserRequest;
 import jbnu.jbnupms.domain.user.dto.UserResponse;
 import jbnu.jbnupms.domain.user.entity.User;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -27,6 +29,7 @@ public class UserService {
     private final WithdrawnUserRepository withdrawnUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserAuditLogger auditLogger;
+    private final S3FileService s3FileService;
 
     public UserResponse getMyInfo(Long userId) {
         User user = findActiveUserById(userId);
@@ -99,6 +102,42 @@ public class UserService {
                     user.getProfileImage()
             );
         }
+
+        return UserResponse.from(user);
+    }
+
+    @Transactional
+    public UserResponse updateProfileImage(Long requestUserId, Long targetUserId, MultipartFile image) {
+        // 본인만 수정 가능
+        if (!requestUserId.equals(targetUserId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        User user = findActiveUserById(targetUserId);
+
+        String oldProfileImage = user.getProfileImage();
+
+        // 기존 이미지가 있으면 S3에서 삭제
+        if (oldProfileImage != null && !oldProfileImage.isBlank()) {
+            s3FileService.deleteFile(oldProfileImage);
+        }
+
+        // 새 이미지 S3 업로드
+        String newProfileImageUrl = s3FileService.uploadFile(image, "profile/" + targetUserId);
+        user.updateProfileImage(newProfileImageUrl);
+        userRepository.save(user);
+
+        // 감사 로그
+        auditLogger.logUpdateProfile(
+                requestUserId,
+                targetUserId,
+                user.getName(),
+                user.getName(),
+                oldProfileImage,
+                newProfileImageUrl
+        );
+
+        log.info("프로필 이미지 수정 완료: userId={}", targetUserId);
 
         return UserResponse.from(user);
     }

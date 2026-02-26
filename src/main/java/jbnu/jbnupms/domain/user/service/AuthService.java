@@ -116,7 +116,6 @@ public class AuthService {
         String providerId = (String) userInfo.get("sub");
         String email = (String) userInfo.get("email");
         String name = (String) userInfo.get("name");
-        String profileImage = (String) userInfo.get("picture");
 
         if (providerId == null || email == null) {
             throw new CustomException(ErrorCode.INVALID_TOKEN,
@@ -125,7 +124,7 @@ public class AuthService {
 
         // 3. TransactionTemplate으로 DB 작업 범위만 정밀하게 트랜잭션 제어
         User user = transactionTemplate.execute(status ->
-                saveOrUpdateOAuthUser(providerId, email, name, profileImage,
+                saveOrUpdateOAuthUser(providerId, email, name,
                         request.getProvider().toUpperCase())
         );
 
@@ -217,14 +216,11 @@ public class AuthService {
      * TransactionTemplate이 트랜잭션을 직접 보장하므로 AOP 프록시 불필요 -> private
      */
     private User saveOrUpdateOAuthUser(String providerId, String email, String name,
-                                       String profileImage, String provider) {
+                                       String provider) {
         return userRepository.findByProviderAndProviderId(provider, providerId)
                 .map(existingUser -> {
                     if (name != null) {          // 이름 null 체크 추가
                         existingUser.updateName(name);
-                    }
-                    if (profileImage != null) {
-                        existingUser.updateProfileImage(profileImage);
                     }
                     log.info("OAuth2 user updated: email={}", email);
                     return userRepository.save(existingUser);
@@ -237,9 +233,6 @@ public class AuthService {
                                     existingUser.setProvider(currentProvider + "," + provider);
                                 }
                                 existingUser.setProviderId(providerId);
-                                if (profileImage != null) {
-                                    existingUser.updateProfileImage(profileImage);
-                                }
                                 User updated = userRepository.save(existingUser);
                                 log.info("Added {} to existing user: email={}", provider, email);
                                 return updated;
@@ -248,7 +241,6 @@ public class AuthService {
                                 User newUser = User.builder()
                                         .email(email)
                                         .name(name)
-                                        .profileImage(profileImage)
                                         .provider(provider)
                                         .providerId(providerId)
                                         .password(null)

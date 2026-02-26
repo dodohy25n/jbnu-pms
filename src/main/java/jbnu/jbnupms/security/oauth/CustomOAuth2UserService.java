@@ -37,15 +37,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String providerId = (String) attributes.get("sub");
         String email = (String) attributes.get("email");
         String name = (String) attributes.get("name");
-        String profileImage = (String) attributes.get("picture");
 
-        User user = saveOrUpdateUser(providerId, email, name, profileImage, registrationId);
+        User user = saveOrUpdateUser(providerId, email, name, registrationId);
 
         Map<String, Object> modifiedAttributes = Map.of(
                 "sub", providerId,
                 "email", email,
                 "name", name,
-                "picture", profileImage != null ? profileImage : "",
                 "userId", user.getId()
         );
 
@@ -56,17 +54,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         );
     }
 
-    private User saveOrUpdateUser(String providerId, String email, String name,
-                                  String profileImage, String provider) {
+    private User saveOrUpdateUser(String providerId, String email, String name, String provider) {
         String providerUpper = provider.toUpperCase();
 
         // 1. provider + providerId로 찾기
         return userRepository.findByProviderAndProviderId(providerUpper, providerId)
                 .map(existingUser -> {
                     existingUser.updateName(name);
-                    if (profileImage != null) {
-                        existingUser.updateProfileImage(profileImage);
-                    }
                     log.info("OAuth2 user updated: {}", email);
                     return userRepository.save(existingUser);
                 })
@@ -80,9 +74,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                     existingUser.setProvider(currentProvider + "," + providerUpper);
                                 }
                                 existingUser.setProviderId(providerId);
-                                if (profileImage != null) {
-                                    existingUser.updateProfileImage(profileImage);
-                                }
                                 User updated = userRepository.save(existingUser);
                                 log.info("Added {} to existing user: {}", providerUpper, email);
                                 return updated;
@@ -92,7 +83,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                 User newUser = User.builder()
                                         .email(email)
                                         .name(name)
-                                        .profileImage(profileImage)
                                         .provider(providerUpper)
                                         .providerId(providerId)
                                         .password(null)

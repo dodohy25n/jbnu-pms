@@ -8,10 +8,12 @@ import jbnu.jbnupms.domain.user.dto.UpdateUserRequest;
 import jbnu.jbnupms.domain.user.dto.UserResponse;
 import jbnu.jbnupms.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/users")
@@ -42,6 +44,17 @@ public class UserController {
     ) {
         Long requestUserId = Long.parseLong(userDetails.getUsername());
         return ResponseEntity.ok(CommonResponse.success(userService.updateUser(requestUserId, userId, request)));
+    }
+
+    @Operation(summary = "프로필 이미지 수정")
+    @PatchMapping(value = "/{userId}/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CommonResponse<UserResponse>> updateProfileImage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long userId,
+            @RequestParam("image") MultipartFile image
+    ) {
+        Long requestUserId = Long.parseLong(userDetails.getUsername());
+        return ResponseEntity.ok(CommonResponse.success(userService.updateProfileImage(requestUserId, userId, image)));
     }
 
     @Operation(summary = "회원 탈퇴")
