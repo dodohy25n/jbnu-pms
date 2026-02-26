@@ -12,12 +12,19 @@ import jbnu.jbnupms.domain.task.entity.Task;
 import jbnu.jbnupms.domain.task.entity.TaskAssignee;
 import jbnu.jbnupms.domain.task.repository.TaskAssigneeRepository;
 import jbnu.jbnupms.domain.task.repository.TaskRepository;
+import jbnu.jbnupms.domain.task.dto.TaskSummaryDto;
+import jbnu.jbnupms.domain.task.entity.TaskStatus;
+import jbnu.jbnupms.domain.space.repository.SpaceMemberRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +39,7 @@ public class TaskService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final SpaceMemberRepository spaceMemberRepository;
 
     // 태스크 생성
     @Transactional
@@ -183,6 +191,53 @@ public class TaskService {
     private void validateProjectMember(Long projectId, Long userId) {
         if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED, "프로젝트 멤버가 아닙니다.");
+        }
+    }
+
+    // 긴급 작업 목록 (마감일 오늘까지 거나 이미 지난 작업 중 완료되지 않은 작업)
+    public List<TaskSummaryDto> getUrgentTasks(Long userId, Long spaceId) {
+        validateSpaceMember(userId, spaceId);
+
+        Pageable pageable = PageRequest.of(0, 5); // 최대 5개
+        LocalDateTime endOfToday = LocalDateTime.now().with(LocalTime.MAX);
+
+        List<TaskAssignee> urgentAssignees = taskAssigneeRepository.findUrgentTasksByUserId(
+                userId, spaceId, TaskStatus.DONE, endOfToday, pageable);
+
+        return urgentAssignees.stream()
+                .map(ta -> TaskSummaryDto.from(
+                        ta.getTask(),
+                        TaskSummaryDto.AssigneeSummaryDto.builder()
+                                .userId(ta.getUser().getId())
+                                .userName(ta.getUser().getName())
+                                .profileImage(ta.getUser().getProfileImage())
+                                .build()))
+                .collect(Collectors.toList());
+    }
+
+    // 진행중 작업 목록
+    public List<TaskSummaryDto> getInProgressTasks(Long userId, Long spaceId) {
+        validateSpaceMember(userId, spaceId);
+
+        Pageable pageable = PageRequest.of(0, 5); // 최대 5개
+
+        List<TaskAssignee> inProgressAssignees = taskAssigneeRepository.findInProgressTasksByUserId(
+                userId, spaceId, TaskStatus.IN_PROGRESS, pageable);
+
+        return inProgressAssignees.stream()
+                .map(ta -> TaskSummaryDto.from(
+                        ta.getTask(),
+                        TaskSummaryDto.AssigneeSummaryDto.builder()
+                                .userId(ta.getUser().getId())
+                                .userName(ta.getUser().getName())
+                                .profileImage(ta.getUser().getProfileImage())
+                                .build()))
+                .collect(Collectors.toList());
+    }
+
+    private void validateSpaceMember(Long userId, Long spaceId) {
+        if (!spaceMemberRepository.existsBySpaceIdAndUserId(spaceId, userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "해당 스페이스의 멤버가 아닙니다.");
         }
     }
 }

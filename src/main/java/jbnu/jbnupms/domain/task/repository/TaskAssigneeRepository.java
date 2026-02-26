@@ -2,9 +2,14 @@ package jbnu.jbnupms.domain.task.repository;
 
 import jbnu.jbnupms.domain.task.entity.Task;
 import jbnu.jbnupms.domain.task.entity.TaskAssignee;
+import jbnu.jbnupms.domain.task.entity.TaskStatus;
 import jbnu.jbnupms.domain.user.entity.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +24,34 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssignee, Long
     boolean existsByTaskAndUser(Task task, User user);
 
     void deleteByTaskAndUser(Task task, User user);
+
+    // 오늘까지 마감이거나 이미 지난 내 작업 목록 조회
+    @Query("SELECT ta FROM TaskAssignee ta " +
+            "JOIN FETCH ta.task t " +
+            "JOIN FETCH t.project p " +
+            "WHERE ta.user.id = :userId " +
+            "AND p.space.id = :spaceId " +
+            "AND t.status != :doneStatus " +
+            "AND t.dueDate <= :endOfToday " +
+            "ORDER BY t.dueDate ASC")
+    List<TaskAssignee> findUrgentTasksByUserId(
+            @Param("userId") Long userId,
+            @Param("spaceId") Long spaceId,
+            @Param("doneStatus") TaskStatus doneStatus,
+            @Param("endOfToday") LocalDateTime endOfToday,
+            Pageable pageable);
+
+    // 진행중인 내 작업 목록 조회
+    @Query("SELECT ta FROM TaskAssignee ta " +
+            "JOIN FETCH ta.task t " +
+            "JOIN FETCH t.project p " +
+            "WHERE ta.user.id = :userId " +
+            "AND p.space.id = :spaceId " +
+            "AND t.status = :inProgressStatus " +
+            "ORDER BY t.updatedAt DESC")
+    List<TaskAssignee> findInProgressTasksByUserId(
+            @Param("userId") Long userId,
+            @Param("spaceId") Long spaceId,
+            @Param("inProgressStatus") TaskStatus inProgressStatus,
+            Pageable pageable);
 }

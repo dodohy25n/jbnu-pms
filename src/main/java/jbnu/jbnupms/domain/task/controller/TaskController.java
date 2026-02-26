@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jbnu.jbnupms.common.response.CommonResponse;
 import jbnu.jbnupms.domain.task.dto.TaskCreateRequest;
 import jbnu.jbnupms.domain.task.dto.TaskResponse;
+import jbnu.jbnupms.domain.task.dto.TaskSummaryDto;
 import jbnu.jbnupms.domain.task.dto.TaskUpdateRequest;
 import jbnu.jbnupms.domain.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -93,5 +94,25 @@ public class TaskController {
         Long userId = Long.parseLong(userDetails.getUsername());
         taskService.removeAssignee(userId, taskId, assigneeId);
         return ResponseEntity.ok(CommonResponse.success(null));
+    }
+
+    @Operation(summary = "긴급 작업 목록 조회", description = "기한이 촉박하거나 지연된 긴급 작업 목록을 조회합니다. (최대 5개)")
+    @GetMapping("/urgent")
+    public ResponseEntity<CommonResponse<List<TaskSummaryDto>>> getUrgentTasks(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Long spaceId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        List<TaskSummaryDto> response = taskService.getUrgentTasks(userId, spaceId);
+        return ResponseEntity.ok(CommonResponse.success(response));
+    }
+
+    @Operation(summary = "진행중 작업 목록 조회", description = "진행중(IN_PROGRESS) 상태인 내 작업 목록을 최신순으로 조회합니다. (최대 5개)")
+    @GetMapping("/in-progress")
+    public ResponseEntity<CommonResponse<List<TaskSummaryDto>>> getInProgressTasks(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Long spaceId) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        List<TaskSummaryDto> response = taskService.getInProgressTasks(userId, spaceId);
+        return ResponseEntity.ok(CommonResponse.success(response));
     }
 }
