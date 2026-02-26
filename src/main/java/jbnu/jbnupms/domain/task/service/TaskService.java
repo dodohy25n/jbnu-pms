@@ -128,7 +128,6 @@ public class TaskService {
         this.validateProjectMember(task.getProject().getId(), userId);
 
         TaskStatus oldStatus = task.getStatus();
-        LocalDateTime oldDueDate = task.getDueDate();
 
         task.update(
                 request.getTitle() != null ? request.getTitle() : task.getTitle(),
@@ -142,16 +141,6 @@ public class TaskService {
             activityLogService.logActivity(task.getProject().getSpace(), task.getProject().getId(),
                     task.getProject().getName(), task.getId(), task.getTitle(), ActionType.TASK_COMPLETED,
                     getUser(userId), "작업이 완료되었습니다.");
-        }
-
-        if (request.getDueDate() != null && oldDueDate != null && !request.getDueDate().equals(oldDueDate)) {
-            activityLogService.logActivity(task.getProject().getSpace(), task.getProject().getId(),
-                    task.getProject().getName(), task.getId(), task.getTitle(), ActionType.TASK_DUE_DATE_CHANGED,
-                    getUser(userId), "작업 마감일이 수정되었습니다.");
-        } else if (request.getDueDate() != null && oldDueDate == null) {
-            activityLogService.logActivity(task.getProject().getSpace(), task.getProject().getId(),
-                    task.getProject().getName(), task.getId(), task.getTitle(), ActionType.TASK_DUE_DATE_CHANGED,
-                    getUser(userId), "작업 마감일이 추가되었습니다.");
         }
     }
 

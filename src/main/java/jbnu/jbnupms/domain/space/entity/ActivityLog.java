@@ -40,7 +40,7 @@ public class ActivityLog {
     private ActionType actionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "actor_id", nullable = false)
+    @JoinColumn(name = "actor_id", nullable = true)
     private User actor;
 
     @Column(columnDefinition = "TEXT")

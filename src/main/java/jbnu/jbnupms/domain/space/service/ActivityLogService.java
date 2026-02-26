@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,31 @@ public class ActivityLogService {
                 .taskTitle(taskTitle)
                 .actionType(actionType)
                 .actor(actor)
+                .summary(summary)
+                .build();
+        activityLogRepository.save(log);
+    }
+
+    // 스케줄러용: actor 없이 시스템 이벤트 기록 (당일 중복 방지)
+    @Transactional
+    public void logSystemActivity(Space space, Long projectId, String projectTitle, Long taskId, String taskTitle,
+            ActionType actionType, String summary) {
+        LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime endOfToday = LocalDateTime.now().with(LocalTime.MAX);
+
+        if (activityLogRepository.existsByTaskIdAndActionTypeAndCreatedAtBetween(
+                taskId, actionType, startOfToday, endOfToday)) {
+            return;
+        }
+
+        ActivityLog log = ActivityLog.builder()
+                .space(space)
+                .projectId(projectId)
+                .projectTitle(projectTitle)
+                .taskId(taskId)
+                .taskTitle(taskTitle)
+                .actionType(actionType)
+                .actor(null)
                 .summary(summary)
                 .build();
         activityLogRepository.save(log);

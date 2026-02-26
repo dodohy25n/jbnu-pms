@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
@@ -19,4 +20,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
         // 상태별 조회
         List<Task> findByProjectIdAndStatus(Long projectId, TaskStatus status);
+
+        // 마감일 범위 내 미완료 태스크 조회 (스케줄러용, project/space fetch join)
+        @Query("SELECT t FROM Task t " +
+                "JOIN FETCH t.project p " +
+                "JOIN FETCH p.space s " +
+                "WHERE t.dueDate >= :startDate AND t.dueDate <= :endDate " +
+                "AND t.status != :doneStatus")
+        List<Task> findTasksDueInRange(
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate,
+                @Param("doneStatus") TaskStatus doneStatus);
 }

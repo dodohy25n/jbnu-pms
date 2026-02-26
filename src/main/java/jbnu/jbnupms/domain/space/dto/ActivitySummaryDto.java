@@ -36,11 +36,13 @@ public class ActivitySummaryDto {
                 .taskId(activityLog.getTaskId())
                 .taskTitle(activityLog.getTaskTitle())
                 .actionType(activityLog.getActionType())
-                .actor(ActorDto.builder()
-                        .id(activityLog.getActor().getId())
-                        .name(activityLog.getActor().getName())
-                        .profileImage(activityLog.getActor().getProfileImage())
-                        .build())
+                .actor(activityLog.getActor() != null
+                        ? ActorDto.builder()
+                                .id(activityLog.getActor().getId())
+                                .name(activityLog.getActor().getName())
+                                .profileImage(activityLog.getActor().getProfileImage())
+                                .build()
+                        : null)
                 .summary(activityLog.getSummary())
                 .createdAt(activityLog.getCreatedAt())
                 .build();
