@@ -14,6 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import jbnu.jbnupms.domain.task.dto.MyTaskSummaryDto;
+import jbnu.jbnupms.domain.task.entity.TaskStatus;
 
 import java.util.List;
 
@@ -106,13 +111,27 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
-    @Operation(summary = "진행중 작업 목록 조회", description = "진행중(IN_PROGRESS) 상태인 내 작업 목록을 최신순으로 조회합니다. (최대 5개)")
-    @GetMapping("/in-progress")
-    public ResponseEntity<CommonResponse<List<TaskSummaryDto>>> getInProgressTasks(
+    @Operation(summary = "내 작업 목록 조회", description = "스페이스 기준 담당자가 나인 작업을 범위별(TODAY, WEEK, ALL) 및 상태별로 조회합니다.")
+    @GetMapping("/my")
+    public ResponseEntity<CommonResponse<Page<TaskSummaryDto>>> getMyTasks(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Long spaceId,
+            @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false, defaultValue = "ALL") String range,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        Page<TaskSummaryDto> response = taskService.getMyTasks(userId, spaceId, status, range, pageable);
+        return ResponseEntity.ok(CommonResponse.success(response));
+    }
+
+    @Operation(summary = "내 작업 요약", description = "스페이스 기준 내 작업의 상태별 개수 요약을 조회합니다.")
+    @GetMapping("/my/summary")
+    public ResponseEntity<CommonResponse<MyTaskSummaryDto>> getMyTaskSummary(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam Long spaceId) {
         Long userId = Long.parseLong(userDetails.getUsername());
-        List<TaskSummaryDto> response = taskService.getInProgressTasks(userId, spaceId);
+        MyTaskSummaryDto response = taskService.getMyTaskSummary(userId, spaceId);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
+
 }

@@ -22,6 +22,8 @@ import jbnu.jbnupms.domain.space.service.ActivityLogService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
+import jbnu.jbnupms.domain.task.dto.MyTaskSummaryDto;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -244,29 +246,60 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // 진행중 작업 목록
-    public List<TaskSummaryDto> getInProgressTasks(Long userId, Long spaceId) {
-        validateSpaceMember(userId, spaceId);
-
-        Pageable pageable = PageRequest.of(0, 5); // 최대 5개
-
-        List<TaskAssignee> inProgressAssignees = taskAssigneeRepository.findInProgressTasksByUserId(
-                userId, spaceId, TaskStatus.IN_PROGRESS, pageable);
-
-        return inProgressAssignees.stream()
-                .map(ta -> TaskSummaryDto.from(
-                        ta.getTask(),
-                        TaskSummaryDto.AssigneeSummaryDto.builder()
-                                .userId(ta.getUser().getId())
-                                .userName(ta.getUser().getName())
-                                .profileImage(ta.getUser().getProfileImage())
-                                .build()))
-                .collect(Collectors.toList());
-    }
-
     private void validateSpaceMember(Long userId, Long spaceId) {
         if (!spaceMemberRepository.existsBySpaceIdAndUserId(spaceId, userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED, "해당 스페이스의 멤버가 아닙니다.");
         }
     }
+
+    // 내 작업 목록 (범위별 페이징)
+    public Page<TaskSummaryDto> getMyTasks(Long userId, Long spaceId, TaskStatus status, String range,
+            Pageable pageable) {
+        validateSpaceMember(userId, spaceId);
+
+        LocalDateTime startDate = null;
+        LocalDateTime endDate = null;
+        LocalDateTime now = LocalDateTime.now();
+
+        if ("TODAY".equalsIgnoreCase(range)) {
+            startDate = now.toLocalDate().atStartOfDay();
+            endDate = now.with(LocalTime.MAX);
+        } else if ("WEEK".equalsIgnoreCase(range)) {
+            int dayOfWeek = now.getDayOfWeek().getValue(); // 1(Mon) ~ 7(Sun)
+            startDate = now.minusDays(dayOfWeek - 1).toLocalDate().atStartOfDay();
+            endDate = now.plusDays(7 - dayOfWeek).with(LocalTime.MAX);
+        }
+
+        Page<TaskAssignee> assignees = taskAssigneeRepository.findMyTasksByUserIdAndSpaceId(
+                userId, spaceId, status, startDate, endDate, pageable);
+
+        return assignees.map(ta -> TaskSummaryDto.from(
+                ta.getTask(),
+                TaskSummaryDto.AssigneeSummaryDto.builder()
+                        .userId(ta.getUser().getId())
+                        .userName(ta.getUser().getName())
+                        .profileImage(ta.getUser().getProfileImage())
+                        .build()));
+    }
+
+    // 내 작업 요약 (상태별 개수)
+    public MyTaskSummaryDto getMyTaskSummary(Long userId, Long spaceId) {
+        validateSpaceMember(userId, spaceId);
+
+        long totalCount = taskAssigneeRepository.countByUserIdAndSpaceId(userId, spaceId);
+        long inProgressCount = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(userId, spaceId,
+                TaskStatus.IN_PROGRESS);
+        long doneCount = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(userId, spaceId, TaskStatus.DONE);
+
+        LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+        long delayedCount = taskAssigneeRepository.countDelayedTasks(userId, spaceId, TaskStatus.DONE, startOfToday);
+
+        return MyTaskSummaryDto.builder()
+                .totalCount(totalCount)
+                .inProgressCount(inProgressCount)
+                .doneCount(doneCount)
+                .delayedCount(delayedCount)
+                .build();
+    }
+
 }

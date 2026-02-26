@@ -55,8 +55,7 @@ public class ActivityLogService {
 
     public Page<ActivitySummaryDto> getActivities(Long userId, Long spaceId, Pageable pageable) {
         validateSpaceMember(userId, spaceId);
-        return activityLogRepository.findBySpaceIdOrderByCreatedAtDesc(spaceId, pageable)
-                .map(ActivitySummaryDto::from);
+        return activityLogRepository.findBySpaceIdOrderByCreatedAtDesc(spaceId, pageable).map(ActivitySummaryDto::from);
     }
 
     private void validateSpaceMember(Long userId, Long spaceId) {
