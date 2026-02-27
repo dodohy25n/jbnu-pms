@@ -53,4 +53,4 @@ jobs:
           kubectl set image deployment/jbnu-pms-app \
             app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             -n jbnu-pms
-          kubectl rollout status deployment/jbnu-pms-app -n jbnu-pms --timeout=300s
+          kubectl rollout status deployment/jbnu-pms-app -n jbnu-pms --timeout=600s
