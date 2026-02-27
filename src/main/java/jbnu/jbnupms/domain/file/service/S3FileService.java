@@ -1,25 +1,24 @@
 package jbnu.jbnupms.domain.file.service;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.UUID;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.InputStreamResource;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 @Slf4j
 @Service
@@ -103,7 +102,26 @@ public class S3FileService {
      * S3 URL에서 파일명 추출
      */
     private String extractFileNameFromUrl(String fileUrl) {
-        return fileUrl.substring(fileUrl.indexOf(bucket) + bucket.length() + 1);
+        try {
+            URL url = new URL(fileUrl);
+            String path = url.getPath();
+
+            // 맨 앞의 '/' 제거
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+
+            // path-style URL인 경우 버킷명이 path에 포함될 수 있으므로 제거
+            if (path.startsWith(bucket + "/")) {
+                return path.substring(bucket.length() + 1);
+            }
+
+            return path;
+        } catch (Exception e) {
+            log.error("S3 파일 URL 파싱 오류: {}, error: {}", fileUrl, e.getMessage());
+            // 예외 발생 시 기존 방식(fallback)으로 처리
+            return fileUrl.substring(fileUrl.indexOf(bucket) + bucket.length() + 1);
+        }
     }
 
     /**
