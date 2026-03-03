@@ -165,7 +165,7 @@ public class SpaceService {
                 Space space = spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스가 존재하지 않습니다."));
 
-                SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(userId, spaceId)
+                SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(targetUserId, spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "해당 스페이스에 속하지 않은 멤버입니다."));
 
                 member.updateRole(request.getRole());
