@@ -4,7 +4,8 @@ metadata:
   name: jbnu-pms-app
   namespace: jbnu-pms
 spec:
-  replicas: 2
+  # replicas: 2 (개발단계에서 t3.small로 사양 조절)
+  replicas: 1
   selector:
     matchLabels:
       app: jbnu-pms-app
@@ -32,18 +33,22 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 60
+            # initialDelaySeconds: 60 (t3.small 다운그레이드 대응)
+            initialDelaySeconds: 120
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 30
+            # initialDelaySeconds: 30 (t3.small 다운그레이드 대응)
+            initialDelaySeconds: 100
             periodSeconds: 5
           resources:
             requests:
-              memory: "512Mi"
+              # memory: "512Mi" (개발단계에서 t3.small로 사양 조절)
+              memory: "256Mi"
               cpu: "250m"
             limits:
-              memory: "1Gi"
+              # memory: "1Gi" (개발단계에서 t3.small로 사양 조절)
+              memory: "768Mi"
               cpu: "500m"
