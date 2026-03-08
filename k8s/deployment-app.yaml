@@ -34,15 +34,21 @@ spec:
               path: /actuator/health
               port: 8080
             # initialDelaySeconds: 60 (t3.small 다운그레이드 대응)
+            # timeoutSeconds 추가
             initialDelaySeconds: 120
             periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
             # initialDelaySeconds: 30 (t3.small 다운그레이드 대응)
+            # timeoutSeconds 추가
             initialDelaySeconds: 100
             periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
           resources:
             requests:
               # memory: "512Mi" (개발단계에서 t3.small로 사양 조절)

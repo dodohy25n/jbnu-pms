@@ -6,13 +6,13 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+
 @Getter
 @Builder
 public class SpaceResponse {
     private Long id;
     private String name;
     private String description;
-    private Long ownerId;
     private LocalDateTime createdAt;
 
     public static SpaceResponse from(Space space) {
@@ -20,7 +20,6 @@ public class SpaceResponse {
                 .id(space.getId())
                 .name(space.getName())
                 .description(space.getDescription())
-                .ownerId(space.getOwner().getId())
                 .createdAt(space.getCreatedAt())
                 .build();
     }

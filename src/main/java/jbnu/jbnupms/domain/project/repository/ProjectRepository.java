@@ -16,6 +16,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         @Query("SELECT p FROM Project p WHERE p.space.id = :spaceId")
         List<Project> findBySpaceId(Long spaceId);
 
+        // 스페이스 내 public 프로젝트 목록 조회
+        @Query("SELECT p FROM Project p WHERE p.space.id = :spaceId AND p.isPublic = true")
+        List<Project> findPublicProjectsBySpaceId(@Param("spaceId") Long spaceId);
+
         // 캘린더용: 여러 스페이스의 마감일 범위 내 프로젝트 조회 (N+1 방지: space fetch join)
         @Query("SELECT p FROM Project p JOIN FETCH p.space s " +
                 "WHERE p.space.id IN :spaceIds " +

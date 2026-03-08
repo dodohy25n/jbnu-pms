@@ -8,6 +8,7 @@ import jbnu.jbnupms.domain.task.dto.TaskCreateRequest;
 import jbnu.jbnupms.domain.task.dto.TaskResponse;
 import jbnu.jbnupms.domain.task.dto.TaskSummaryDto;
 import jbnu.jbnupms.domain.task.dto.TaskUpdateRequest;
+import jbnu.jbnupms.domain.task.entity.TaskAssigneeRole;
 import jbnu.jbnupms.domain.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -79,14 +80,15 @@ public class TaskController {
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 
-    @Operation(summary = "담당자 추가")
+    @Operation(summary = "담당자 추가", description = "role: ASSIGNEE(담당자, 기본값) 또는 MANAGER(관리자)")
     @PostMapping("/{taskId}/assignees")
     public ResponseEntity<CommonResponse<Void>> addAssignee(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long taskId,
-            @RequestParam Long assigneeId) {
+            @RequestParam Long assigneeId,
+            @RequestParam(required = false, defaultValue = "ASSIGNEE") TaskAssigneeRole role) {
         Long userId = Long.parseLong(userDetails.getUsername());
-        taskService.addAssignee(userId, taskId, assigneeId);
+        taskService.addAssignee(userId, taskId, assigneeId, role);
         return ResponseEntity.ok(CommonResponse.success(null));
     }
 

@@ -34,21 +34,20 @@ public class SpaceService {
         // 스페이스 생성
         @Transactional
         public Long createSpace(Long userId, SpaceCreateRequest request) {
-                User owner = userRepository.findById(userId)
+                User creator = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 Space space = Space.builder()
                         .name(request.getName())
                         .description(request.getDescription())
-                        .owner(owner)
                         .build();
 
                 Space savedSpace = spaceRepository.save(space);
 
-                // 생성자는 ADMIN으로 추가
+                // 생성자는 ADMIN으로 자동 가입
                 SpaceMember spaceMember = SpaceMember.builder()
                         .space(savedSpace)
-                        .user(owner)
+                        .user(creator)
                         .role(SpaceRole.ADMIN)
                         .build();
                 spaceMemberRepository.save(spaceMember);
@@ -159,14 +158,22 @@ public class SpaceService {
 
                 validateAdminPermission(userId, spaceId);
 
-                User targetUser = userRepository.findById(targetUserId)
+                userRepository.findById(targetUserId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-                Space space = spaceRepository.findById(spaceId)
+                spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스가 존재하지 않습니다."));
 
                 SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(targetUserId, spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "해당 스페이스에 속하지 않은 멤버입니다."));
+
+                // 마지막 관리자의 권한은 변경 불가
+                if (member.getRole() == SpaceRole.ADMIN && request.getRole() != SpaceRole.ADMIN) {
+                        long adminCount = spaceMemberRepository.countBySpaceIdAndRole(spaceId, SpaceRole.ADMIN);
+                        if (adminCount <= 1) {
+                                throw new CustomException(ErrorCode.STATE_CONFLICT, "스페이스에 관리자가 1명뿐입니다. 권한을 변경할 수 없습니다.");
+                        }
+                }
 
                 member.updateRole(request.getRole());
         }
@@ -176,6 +183,14 @@ public class SpaceService {
         public void leaveSpace(Long userId, Long spaceId) {
                 SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(userId, spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스에 참여하고 있지 않습니다."));
+
+                // 마지막 관리자는 나가기 불가
+                if (member.getRole() == SpaceRole.ADMIN) {
+                        long adminCount = spaceMemberRepository.countBySpaceIdAndRole(spaceId, SpaceRole.ADMIN);
+                        if (adminCount <= 1) {
+                                throw new CustomException(ErrorCode.STATE_CONFLICT, "스페이스에 관리자가 1명뿐입니다. 나갈 수 없습니다.");
+                        }
+                }
 
                 spaceMemberRepository.delete(member);
         }
