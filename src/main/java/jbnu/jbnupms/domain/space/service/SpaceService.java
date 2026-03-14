@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.space.service;
 
 import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
+import jbnu.jbnupms.domain.notification.event.SpaceInvitedEvent;
 import jbnu.jbnupms.domain.space.dto.SpaceCreateRequest;
 import jbnu.jbnupms.domain.space.dto.SpaceDetailResponse;
 import jbnu.jbnupms.domain.space.dto.SpaceInviteRequest;
@@ -16,6 +17,7 @@ import jbnu.jbnupms.domain.space.repository.SpaceRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class SpaceService {
         private final SpaceRepository spaceRepository;
         private final SpaceMemberRepository spaceMemberRepository;
         private final UserRepository userRepository;
+        private final ApplicationEventPublisher eventPublisher;
 
         // 스페이스 생성
         @Transactional
@@ -124,34 +127,30 @@ public class SpaceService {
                         throw new CustomException(ErrorCode.DUPLICATE_RESOURCE, "이미 참여 중인 멤버입니다.");
                 }
 
-                SpaceMember member = SpaceMember.builder()
-                        .space(space)
-                        .user(targetUser)
+                spaceMemberRepository.save(SpaceMember.builder()
+                        .space(space).user(targetUser)
                         .role(request.getRole() != null ? request.getRole() : SpaceRole.MEMBER)
-                        .build();
+                        .build());
 
-                spaceMemberRepository.save(member);
+                // 알림 이벤트 publish
+                eventPublisher.publishEvent(
+                        new SpaceInvitedEvent(space.getId(), space.getName(), targetUser.getId()));
         }
 
         // 스페이스 멤버 목록만 따로 조회
         public List<SpaceDetailResponse.MemberDto> getSpaceMembers(Long userId, Long spaceId) {
                 Space space = spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-                // 멤버인지 확인
                 if (!spaceMemberRepository.existsBySpaceAndUser(space, user)) {
                         throw new CustomException(ErrorCode.ACCESS_DENIED);
                 }
-
-                List<SpaceMember> members = spaceMemberRepository.findBySpaceId(spaceId);
-
-                return members.stream()
+                return spaceMemberRepository.findBySpaceId(spaceId).stream()
                         .map(SpaceDetailResponse.MemberDto::new)
                         .collect(Collectors.toList());
         }
+
         // 스페이스 멤버 역할 변경
         @Transactional
         public void updateMemberRole(Long userId, Long spaceId, Long targetUserId, SpaceRoleUpdateRequest request) {

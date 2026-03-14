@@ -1,5 +1,6 @@
 package jbnu.jbnupms.domain.project.repository;
 
+import jbnu.jbnupms.domain.project.entity.ProjectStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 @Param("spaceIds") List<Long> spaceIds,
                 @Param("startDate") LocalDateTime startDate,
                 @Param("endDate") LocalDateTime endDate);
+
+        // 스케줄러용: 마감일 범위 내 완료되지 않은 프로젝트 조회
+        @Query("SELECT p FROM Project p " +
+                "JOIN FETCH p.space s " +
+                "WHERE p.dueDate >= :startDate AND p.dueDate <= :endDate " +
+                "AND p.status != :doneStatus")
+        List<Project> findProjectsDueInRange(
+                @Param("startDate")  LocalDateTime startDate,
+                @Param("endDate")    LocalDateTime endDate,
+                @Param("doneStatus") ProjectStatus doneStatus);
 }

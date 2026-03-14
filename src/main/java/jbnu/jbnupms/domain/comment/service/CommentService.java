@@ -7,10 +7,12 @@ import jbnu.jbnupms.domain.comment.dto.CommentResponse;
 import jbnu.jbnupms.domain.comment.dto.CommentUpdateRequest;
 import jbnu.jbnupms.domain.comment.entity.Comment;
 import jbnu.jbnupms.domain.comment.repository.CommentRepository;
+import jbnu.jbnupms.domain.notification.event.CommentCreatedEvent;
 import jbnu.jbnupms.domain.project.entity.ProjectMember;
 import jbnu.jbnupms.domain.project.entity.ProjectRole;
 import jbnu.jbnupms.domain.project.repository.ProjectMemberRepository;
 import jbnu.jbnupms.domain.task.entity.Task;
+import jbnu.jbnupms.domain.task.repository.TaskAssigneeRepository;
 import jbnu.jbnupms.domain.task.repository.TaskRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
@@ -18,6 +20,7 @@ import jbnu.jbnupms.domain.space.entity.ActionType;
 import jbnu.jbnupms.domain.space.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +39,10 @@ public class CommentService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final TaskAssigneeRepository taskAssigneeRepository;
     private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
+
 
     /**
      * 댓글 생성
@@ -87,6 +93,20 @@ public class CommentService {
                 task.getProject().getName(), task.getId(), task.getTitle(), ActionType.COMMENT_ADDED, user,
                 "새 댓글이 추가되었습니다.");
 
+        // 알림 이벤트 publish
+        List<Long> receiverIds = taskAssigneeRepository.findByTaskId(task.getId())
+                .stream()
+                .map(ta -> ta.getUser().getId())
+                .filter(id -> !id.equals(userId))
+                .collect(Collectors.toList());
+
+        if (!receiverIds.isEmpty()) {
+            eventPublisher.publishEvent(new CommentCreatedEvent(
+                    task.getId(), task.getTitle(),
+                    userId, user.getName(),
+                    request.getContent(), receiverIds));
+        }
+
         return CommentResponse.from(savedComment);
     }
 
@@ -107,8 +127,9 @@ public class CommentService {
         // 각 부모 댓글의 대댓글 조회
         Map<Long, List<CommentResponse>> repliesMap = new HashMap<>();
         for (Comment parent : parentComments) {
-            List<Comment> replies = commentRepository.findRepliesByParentId(parent.getId());
-            List<CommentResponse> replyResponses = replies.stream()
+            List<CommentResponse> replyResponses = commentRepository
+                    .findRepliesByParentId(parent.getId())
+                    .stream()
                     .map(CommentResponse::from)
                     .collect(Collectors.toList());
             repliesMap.put(parent.getId(), replyResponses);

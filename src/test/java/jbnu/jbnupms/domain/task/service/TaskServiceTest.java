@@ -70,7 +70,7 @@ class TaskServiceTest {
         Space space = spaceRepository.save(Space.builder()
                 .name("Test Space")
                 .description("Description")
-                .owner(user)
+                // .owner(user) - 제거된 필드 주석처리
                 .build());
 
         Project project = projectRepository.save(Project.builder()
