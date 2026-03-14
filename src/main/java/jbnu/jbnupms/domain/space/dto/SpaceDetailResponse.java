@@ -15,7 +15,6 @@ public class SpaceDetailResponse {
     private Long id;
     private String name;
     private String description;
-    private Long ownerId;
     private LocalDateTime createdAt;
     private List<MemberDto> members;
 
@@ -24,7 +23,6 @@ public class SpaceDetailResponse {
                 .id(space.getId())
                 .name(space.getName())
                 .description(space.getDescription())
-                .ownerId(space.getOwner().getId())
                 .createdAt(space.getCreatedAt())
                 .members(members.stream()
                         .map(MemberDto::new)

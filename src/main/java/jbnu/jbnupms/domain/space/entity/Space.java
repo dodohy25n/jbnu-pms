@@ -1,7 +1,6 @@
 package jbnu.jbnupms.domain.space.entity;
 
 import jakarta.persistence.*;
-import jbnu.jbnupms.domain.user.entity.User;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,10 +28,6 @@ public class Space {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -43,10 +38,9 @@ public class Space {
     private LocalDateTime deletedAt;
 
     @Builder
-    public Space(String name, String description, User owner) {
+    public Space(String name, String description) {
         this.name = name;
         this.description = description;
-        this.owner = owner;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

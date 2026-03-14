@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.space.repository;
 
 import jbnu.jbnupms.domain.space.entity.Space;
 import jbnu.jbnupms.domain.space.entity.SpaceMember;
+import jbnu.jbnupms.domain.space.entity.SpaceRole;
 import jbnu.jbnupms.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +25,6 @@ public interface SpaceMemberRepository extends JpaRepository<SpaceMember, Long> 
     Optional<SpaceMember> findByUserIdAndSpaceId(Long userId, Long spaceId);
 
     boolean existsBySpaceIdAndUserId(Long spaceId, Long userId);
+
+    long countBySpaceIdAndRole(Long spaceId, SpaceRole role);
 }

@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.space.service;
 
 import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
+import jbnu.jbnupms.domain.notification.event.SpaceInvitedEvent;
 import jbnu.jbnupms.domain.space.dto.SpaceCreateRequest;
 import jbnu.jbnupms.domain.space.dto.SpaceDetailResponse;
 import jbnu.jbnupms.domain.space.dto.SpaceInviteRequest;
@@ -16,6 +17,7 @@ import jbnu.jbnupms.domain.space.repository.SpaceRepository;
 import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,25 +32,25 @@ public class SpaceService {
         private final SpaceRepository spaceRepository;
         private final SpaceMemberRepository spaceMemberRepository;
         private final UserRepository userRepository;
+        private final ApplicationEventPublisher eventPublisher;
 
         // 스페이스 생성
         @Transactional
         public Long createSpace(Long userId, SpaceCreateRequest request) {
-                User owner = userRepository.findById(userId)
+                User creator = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 Space space = Space.builder()
                         .name(request.getName())
                         .description(request.getDescription())
-                        .owner(owner)
                         .build();
 
                 Space savedSpace = spaceRepository.save(space);
 
-                // 생성자는 ADMIN으로 추가
+                // 생성자는 ADMIN으로 자동 가입
                 SpaceMember spaceMember = SpaceMember.builder()
                         .space(savedSpace)
-                        .user(owner)
+                        .user(creator)
                         .role(SpaceRole.ADMIN)
                         .build();
                 spaceMemberRepository.save(spaceMember);
@@ -125,48 +127,52 @@ public class SpaceService {
                         throw new CustomException(ErrorCode.DUPLICATE_RESOURCE, "이미 참여 중인 멤버입니다.");
                 }
 
-                SpaceMember member = SpaceMember.builder()
-                        .space(space)
-                        .user(targetUser)
+                spaceMemberRepository.save(SpaceMember.builder()
+                        .space(space).user(targetUser)
                         .role(request.getRole() != null ? request.getRole() : SpaceRole.MEMBER)
-                        .build();
+                        .build());
 
-                spaceMemberRepository.save(member);
+                // 알림 이벤트 publish
+                eventPublisher.publishEvent(
+                        new SpaceInvitedEvent(space.getId(), space.getName(), targetUser.getId()));
         }
 
         // 스페이스 멤버 목록만 따로 조회
         public List<SpaceDetailResponse.MemberDto> getSpaceMembers(Long userId, Long spaceId) {
                 Space space = spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-                // 멤버인지 확인
                 if (!spaceMemberRepository.existsBySpaceAndUser(space, user)) {
                         throw new CustomException(ErrorCode.ACCESS_DENIED);
                 }
-
-                List<SpaceMember> members = spaceMemberRepository.findBySpaceId(spaceId);
-
-                return members.stream()
+                return spaceMemberRepository.findBySpaceId(spaceId).stream()
                         .map(SpaceDetailResponse.MemberDto::new)
                         .collect(Collectors.toList());
         }
+
         // 스페이스 멤버 역할 변경
         @Transactional
         public void updateMemberRole(Long userId, Long spaceId, Long targetUserId, SpaceRoleUpdateRequest request) {
 
                 validateAdminPermission(userId, spaceId);
 
-                User targetUser = userRepository.findById(targetUserId)
+                userRepository.findById(targetUserId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-                Space space = spaceRepository.findById(spaceId)
+                spaceRepository.findById(spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스가 존재하지 않습니다."));
 
                 SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(targetUserId, spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "해당 스페이스에 속하지 않은 멤버입니다."));
+
+                // 마지막 관리자의 권한은 변경 불가
+                if (member.getRole() == SpaceRole.ADMIN && request.getRole() != SpaceRole.ADMIN) {
+                        long adminCount = spaceMemberRepository.countBySpaceIdAndRole(spaceId, SpaceRole.ADMIN);
+                        if (adminCount <= 1) {
+                                throw new CustomException(ErrorCode.STATE_CONFLICT, "스페이스에 관리자가 1명뿐입니다. 권한을 변경할 수 없습니다.");
+                        }
+                }
 
                 member.updateRole(request.getRole());
         }
@@ -176,6 +182,14 @@ public class SpaceService {
         public void leaveSpace(Long userId, Long spaceId) {
                 SpaceMember member = spaceMemberRepository.findByUserIdAndSpaceId(userId, spaceId)
                         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "해당 스페이스에 참여하고 있지 않습니다."));
+
+                // 마지막 관리자는 나가기 불가
+                if (member.getRole() == SpaceRole.ADMIN) {
+                        long adminCount = spaceMemberRepository.countBySpaceIdAndRole(spaceId, SpaceRole.ADMIN);
+                        if (adminCount <= 1) {
+                                throw new CustomException(ErrorCode.STATE_CONFLICT, "스페이스에 관리자가 1명뿐입니다. 나갈 수 없습니다.");
+                        }
+                }
 
                 spaceMemberRepository.delete(member);
         }

@@ -3,6 +3,7 @@ package jbnu.jbnupms.domain.task.dto;
 
 import jbnu.jbnupms.domain.task.entity.Task;
 import jbnu.jbnupms.domain.task.entity.TaskAssignee;
+import jbnu.jbnupms.domain.task.entity.TaskAssigneeRole;
 import jbnu.jbnupms.domain.task.entity.TaskPriority;
 import jbnu.jbnupms.domain.task.entity.TaskStatus;
 import jbnu.jbnupms.domain.user.dto.UserResponse;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 public class TaskResponse {
-    
+
     private Long id;
     private Long projectId;
     private Long parentId;
@@ -30,12 +31,14 @@ public class TaskResponse {
     private LocalDateTime dueDate;
     private UserResponse creator;
     private List<UserResponse> assignees;
+    private List<UserResponse> managers;
     private List<TaskResponse> children;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    //담당자 정보가 포함된 완전한 응답 객체를 생성할 때 사용
+    // 담당자 목록을 받아 완전한 응답 객체를 생성할 때 사용
     public static TaskResponse from(Task task, List<TaskAssignee> taskAssignees) {
+        List<TaskAssignee> list = taskAssignees != null ? taskAssignees : Collections.emptyList();
         return TaskResponse.builder()
                 .id(task.getId())
                 .projectId(task.getProject().getId())
@@ -47,10 +50,14 @@ public class TaskResponse {
                 .progress(task.getProgress())
                 .dueDate(task.getDueDate())
                 .creator(UserResponse.from(task.getCreator()))
-                .assignees(taskAssignees != null ? 
-                        taskAssignees.stream()
-                                .map(ta -> UserResponse.from(ta.getUser()))
-                                .collect(Collectors.toList()) : null)
+                .assignees(list.stream()
+                        .filter(ta -> ta.getRole() == TaskAssigneeRole.ASSIGNEE)
+                        .map(ta -> UserResponse.from(ta.getUser()))
+                        .collect(Collectors.toList()))
+                .managers(list.stream()
+                        .filter(ta -> ta.getRole() == TaskAssigneeRole.MANAGER)
+                        .map(ta -> UserResponse.from(ta.getUser()))
+                        .collect(Collectors.toList()))
                 .children(task.getChildren() != null ?
                         task.getChildren().stream()
                                 .map(TaskResponse::from)
@@ -62,7 +69,7 @@ public class TaskResponse {
 
     // 담당자 정보 포함하지 않는 변환
     public static TaskResponse from(Task task) {
-         return from(task, Collections.emptyMap());
+        return from(task, Collections.emptyMap());
     }
 
     public static TaskResponse from(Task task, Map<Long, List<TaskAssignee>> assigneeMap) {
@@ -80,6 +87,11 @@ public class TaskResponse {
                 .dueDate(task.getDueDate())
                 .creator(UserResponse.from(task.getCreator()))
                 .assignees(taskAssignees.stream()
+                        .filter(ta -> ta.getRole() == TaskAssigneeRole.ASSIGNEE)
+                        .map(ta -> UserResponse.from(ta.getUser()))
+                        .collect(Collectors.toList()))
+                .managers(taskAssignees.stream()
+                        .filter(ta -> ta.getRole() == TaskAssigneeRole.MANAGER)
                         .map(ta -> UserResponse.from(ta.getUser()))
                         .collect(Collectors.toList()))
                 .children(task.getChildren() != null ?

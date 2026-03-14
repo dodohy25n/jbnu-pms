@@ -30,13 +30,18 @@ public class TaskAssignee {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private TaskAssigneeRole role;
+
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
     @Builder
-    public TaskAssignee(Task task, User user) {
+    public TaskAssignee(Task task, User user, TaskAssigneeRole role) {
         this.task = task;
         this.user = user;
+        this.role = role != null ? role : TaskAssigneeRole.ASSIGNEE;
         this.assignedAt = LocalDateTime.now();
     }
 }

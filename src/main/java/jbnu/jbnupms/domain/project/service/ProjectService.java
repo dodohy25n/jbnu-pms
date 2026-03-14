@@ -25,7 +25,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,27 +82,38 @@ public class ProjectService {
         }
 
         // 사용자가 속한 특정 스페이스의 프로젝트 목록 조회
+        // - 멤버로 참여한 프로젝트 + 스페이스 내 public 프로젝트 모두 반환
         @Transactional
         public List<ProjectResponse> getProjects(Long userId, Long spaceId) {
-                List<Project> projects = projectMemberRepository.findByUserIdAndSpaceId(userId, spaceId).stream()
-                                .map(ProjectMember::getProject)
-                                .collect(Collectors.toList());
+                List<ProjectMember> myMemberships = projectMemberRepository.findByUserIdAndSpaceId(userId, spaceId);
+                Set<Long> myProjectIds = myMemberships.stream()
+                                .map(pm -> pm.getProject().getId())
+                                .collect(Collectors.toCollection(HashSet::new));
 
-                List<Long> projectIds = projects.stream().map(Project::getId).collect(Collectors.toList());
-                List<ProjectMember> allMembers = projectIds.isEmpty() ? List.of()
-                                : projectMemberRepository.findByProjectIdIn(projectIds);
+                // 멤버 프로젝트 + 참여하지 않은 public 프로젝트 합산
+                List<Project> allProjects = new ArrayList<>();
+                myMemberships.forEach(pm -> allProjects.add(pm.getProject()));
+                projectRepository.findPublicProjectsBySpaceId(spaceId).stream()
+                                .filter(p -> !myProjectIds.contains(p.getId()))
+                                .forEach(allProjects::add);
 
-                return projects.stream()
+                List<Long> allProjectIds = allProjects.stream().map(Project::getId).collect(Collectors.toList());
+                List<ProjectMember> allMembers = allProjectIds.isEmpty() ? List.of()
+                                : projectMemberRepository.findByProjectIdIn(allProjectIds);
+
+                return allProjects.stream()
                                 .map(project -> {
                                         List<ProjectMember> members = allMembers.stream()
                                                         .filter(pm -> pm.getProject().getId().equals(project.getId()))
                                                         .collect(Collectors.toList());
 
-                                        // 최근접근일시 업데이트 (내 프로젝트 멤버 객체 찾아서)
-                                        members.stream()
-                                                        .filter(pm -> pm.getUser().getId().equals(userId))
-                                                        .findFirst()
-                                                        .ifPresent(ProjectMember::updateLastAccessedAt);
+                                        // 최근접근일시 업데이트 (내 멤버십이 있는 프로젝트만)
+                                        if (myProjectIds.contains(project.getId())) {
+                                                members.stream()
+                                                                .filter(pm -> pm.getUser().getId().equals(userId))
+                                                                .findFirst()
+                                                                .ifPresent(ProjectMember::updateLastAccessedAt);
+                                        }
 
                                         return ProjectResponse.from(project, members, userId);
                                 })
@@ -107,26 +121,31 @@ public class ProjectService {
         }
 
         // 프로젝트 단건 조회
+        // - 프로젝트 멤버 OR (public 프로젝트 + 스페이스 멤버)이면 조회 가능
         @Transactional
         public ProjectResponse getProject(Long userId, Long projectId) {
                 Project project = projectRepository.findById(projectId)
                                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-                User user = userRepository.findById(userId)
-                                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                boolean isMember = projectMemberRepository.existsByProjectAndUser(project,
+                                userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND)));
 
-                // 멤버인지 확인
-                if (!projectMemberRepository.existsByProjectAndUser(project, user)) {
-                        throw new CustomException(ErrorCode.ACCESS_DENIED);
+                if (!isMember) {
+                        // public 프로젝트이고 스페이스 멤버인 경우 읽기 허용
+                        if (!project.getIsPublic() || !spaceMemberRepository.existsBySpaceIdAndUserId(project.getSpace().getId(), userId)) {
+                                throw new CustomException(ErrorCode.ACCESS_DENIED);
+                        }
                 }
 
                 List<ProjectMember> members = projectMemberRepository.findByProjectId(projectId);
 
-                // 최근접근일시 업데이트
-                members.stream()
-                                .filter(pm -> pm.getUser().getId().equals(userId))
-                                .findFirst()
-                                .ifPresent(ProjectMember::updateLastAccessedAt);
+                // 최근접근일시 업데이트 (멤버인 경우만)
+                if (isMember) {
+                        members.stream()
+                                        .filter(pm -> pm.getUser().getId().equals(userId))
+                                        .findFirst()
+                                        .ifPresent(ProjectMember::updateLastAccessedAt);
+                }
 
                 return ProjectResponse.from(project, members, userId);
         }
@@ -200,9 +219,11 @@ public class ProjectService {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-                // 멤버인지 확인
-                if (!projectMemberRepository.existsByProjectAndUser(project, user)) {
-                        throw new CustomException(ErrorCode.ACCESS_DENIED);
+                boolean isMember = projectMemberRepository.existsByProjectAndUser(project, user);
+                if (!isMember) {
+                        if (!project.getIsPublic() || !spaceMemberRepository.existsBySpaceIdAndUserId(project.getSpace().getId(), userId)) {
+                                throw new CustomException(ErrorCode.ACCESS_DENIED);
+                        }
                 }
 
                 List<ProjectMember> members = projectMemberRepository.findByProjectId(projectId);
