@@ -35,7 +35,7 @@ public class SwaggerConfig {
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("로컬 서버"),
                         new Server().url("https://api.jbnu-pms.com").description("프로덕션 서버"),
-                        new Server().url("http://52.65.212.39:31755").description("배포 서버")
+                        new Server().url("http://54.180.160.209:30492").description("배포 서버")
                 ))
                 .addSecurityItem(securityRequirement)
                 .components(components);
