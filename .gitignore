@@ -46,3 +46,6 @@ application-local.properties
 
 ## k8s ##
 k8s/secret.yaml
+
+## k6 ##
+k6/result*.json
