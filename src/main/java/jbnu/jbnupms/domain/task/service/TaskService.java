@@ -2,6 +2,7 @@ package jbnu.jbnupms.domain.task.service;
 
 import jbnu.jbnupms.common.exception.CustomException;
 import jbnu.jbnupms.common.exception.ErrorCode;
+import jbnu.jbnupms.domain.notification.event.TaskAssignedEvent;
 import jbnu.jbnupms.domain.project.entity.Project;
 import jbnu.jbnupms.domain.project.entity.ProjectMember;
 import jbnu.jbnupms.domain.project.entity.ProjectRole;
@@ -22,6 +23,7 @@ import jbnu.jbnupms.domain.user.entity.User;
 import jbnu.jbnupms.domain.user.repository.UserRepository;
 import jbnu.jbnupms.domain.space.entity.ActionType;
 import jbnu.jbnupms.domain.space.service.ActivityLogService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class TaskService {
     private final ProjectMemberRepository projectMemberRepository;
     private final SpaceMemberRepository spaceMemberRepository;
     private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 태스크 생성
     @Transactional
@@ -84,12 +87,21 @@ public class TaskService {
         // 담당자 할당 (ASSIGNEE 역할)
         for (Long assigneeId : request.getAssigneeIds()) {
             assignUserToTask(task, assigneeId, TaskAssigneeRole.ASSIGNEE);
+            if (!assigneeId.equals(userId)) {
+                eventPublisher.publishEvent(new TaskAssignedEvent(
+                        task.getId(), task.getTitle(),
+                        assigneeId, user.getName(), project.getId()));
+            }
         }
-
         // 관리자 할당 (MANAGER 역할)
         if (request.getManagerIds() != null) {
             for (Long managerId : request.getManagerIds()) {
                 assignUserToTask(task, managerId, TaskAssigneeRole.MANAGER);
+                if (!managerId.equals(userId)) {
+                    eventPublisher.publishEvent(new TaskAssignedEvent(
+                            task.getId(), task.getTitle(),
+                            managerId, user.getName(), project.getId()));
+                }
             }
         }
 
@@ -164,14 +176,23 @@ public class TaskService {
     // 담당자 추가
     @Transactional
     public void addAssignee(Long userId, Long taskId, Long assigneeId, TaskAssigneeRole role) {
-        Task task = this.getTaskById(taskId);
-        this.validateProjectWriteAccess(task.getProject().getId(), userId);
+        Task task = getTaskById(taskId);
+        validateProjectWriteAccess(task.getProject().getId(), userId);
 
         assignUserToTask(task, assigneeId, role != null ? role : TaskAssigneeRole.ASSIGNEE);
+
         User assignee = getUser(assigneeId);
-        activityLogService.logActivity(task.getProject().getSpace(), task.getProject().getId(),
-                task.getProject().getName(), task.getId(), task.getTitle(), ActionType.ASSIGNEE_CHANGED,
-                getUser(userId), assignee.getName() + "님이 담당자로 추가되었습니다.");
+        activityLogService.logActivity(
+                task.getProject().getSpace(), task.getProject().getId(),
+                task.getProject().getName(), task.getId(), task.getTitle(),
+                ActionType.ASSIGNEE_CHANGED, getUser(userId),
+                assignee.getName() + "님이 담당자로 추가되었습니다.");
+
+        // 알림 이벤트 publish
+        eventPublisher.publishEvent(new TaskAssignedEvent(
+                task.getId(), task.getTitle(),
+                assigneeId, getUser(userId).getName(),
+                task.getProject().getId()));
     }
 
     // 담당자 삭제
@@ -202,6 +223,66 @@ public class TaskService {
                     .role(role)
                     .build());
         }
+    }
+
+    // 긴급 작업 목록 (마감일 오늘까지 거나 이미 지난 작업 중 완료되지 않은 작업)
+    public List<TaskSummaryDto> getUrgentTasks(Long userId, Long spaceId) {
+        validateSpaceMember(userId, spaceId);
+        LocalDateTime endOfToday = LocalDateTime.now().with(LocalTime.MAX);
+        return taskAssigneeRepository
+                .findUrgentTasksByUserId(userId, spaceId, TaskStatus.DONE,
+                        endOfToday, PageRequest.of(0, 5))
+                .stream()
+                .map(ta -> TaskSummaryDto.from(ta.getTask(),
+                        TaskSummaryDto.AssigneeSummaryDto.builder()
+                                .userId(ta.getUser().getId())
+                                .userName(ta.getUser().getName())
+                                .profileImage(ta.getUser().getProfileImage())
+                                .build()))
+                .collect(Collectors.toList());
+    }
+
+    // 내 작업 목록 (범위별 페이징)
+    public Page<TaskSummaryDto> getMyTasks(Long userId, Long spaceId,
+                                           TaskStatus status, String range,
+                                           Pageable pageable) {
+        validateSpaceMember(userId, spaceId);
+        LocalDateTime startDate = null;
+        LocalDateTime endDate   = null;
+        LocalDateTime now       = LocalDateTime.now();
+        if ("TODAY".equalsIgnoreCase(range)) {
+            startDate = now.toLocalDate().atStartOfDay();
+            endDate   = now.with(LocalTime.MAX);
+        } else if ("WEEK".equalsIgnoreCase(range)) {
+            int dayOfWeek = now.getDayOfWeek().getValue();
+            startDate = now.minusDays(dayOfWeek - 1).toLocalDate().atStartOfDay();
+            endDate   = now.plusDays(7 - dayOfWeek).with(LocalTime.MAX);
+        }
+        return taskAssigneeRepository
+                .findMyTasksByUserIdAndSpaceId(userId, spaceId, status, startDate, endDate, pageable)
+                .map(ta -> TaskSummaryDto.from(ta.getTask(),
+                        TaskSummaryDto.AssigneeSummaryDto.builder()
+                                .userId(ta.getUser().getId())
+                                .userName(ta.getUser().getName())
+                                .profileImage(ta.getUser().getProfileImage())
+                                .build()));
+    }
+
+    // 내 작업 요약 (상태별 개수)
+    public MyTaskSummaryDto getMyTaskSummary(Long userId, Long spaceId) {
+        validateSpaceMember(userId, spaceId);
+        long totalCount      = taskAssigneeRepository.countByUserIdAndSpaceId(userId, spaceId);
+        long inProgressCount = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(
+                userId, spaceId, TaskStatus.IN_PROGRESS);
+        long doneCount       = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(
+                userId, spaceId, TaskStatus.DONE);
+        LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+        long delayedCount = taskAssigneeRepository.countDelayedTasks(
+                userId, spaceId, TaskStatus.DONE, startOfToday);
+        return MyTaskSummaryDto.builder()
+                .totalCount(totalCount).inProgressCount(inProgressCount)
+                .doneCount(doneCount).delayedCount(delayedCount)
+                .build();
     }
 
     private User getUser(Long userId) {
@@ -240,81 +321,9 @@ public class TaskService {
         }
     }
 
-    // 긴급 작업 목록 (마감일 오늘까지 거나 이미 지난 작업 중 완료되지 않은 작업)
-    public List<TaskSummaryDto> getUrgentTasks(Long userId, Long spaceId) {
-        validateSpaceMember(userId, spaceId);
-
-        Pageable pageable = PageRequest.of(0, 5); // 최대 5개
-        LocalDateTime endOfToday = LocalDateTime.now().with(LocalTime.MAX);
-
-        List<TaskAssignee> urgentAssignees = taskAssigneeRepository.findUrgentTasksByUserId(
-                userId, spaceId, TaskStatus.DONE, endOfToday, pageable);
-
-        return urgentAssignees.stream()
-                .map(ta -> TaskSummaryDto.from(
-                        ta.getTask(),
-                        TaskSummaryDto.AssigneeSummaryDto.builder()
-                                .userId(ta.getUser().getId())
-                                .userName(ta.getUser().getName())
-                                .profileImage(ta.getUser().getProfileImage())
-                                .build()))
-                .collect(Collectors.toList());
-    }
-
     private void validateSpaceMember(Long userId, Long spaceId) {
         if (!spaceMemberRepository.existsBySpaceIdAndUserId(spaceId, userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED, "해당 스페이스의 멤버가 아닙니다.");
         }
     }
-
-    // 내 작업 목록 (범위별 페이징)
-    public Page<TaskSummaryDto> getMyTasks(Long userId, Long spaceId, TaskStatus status, String range,
-            Pageable pageable) {
-        validateSpaceMember(userId, spaceId);
-
-        LocalDateTime startDate = null;
-        LocalDateTime endDate = null;
-        LocalDateTime now = LocalDateTime.now();
-
-        if ("TODAY".equalsIgnoreCase(range)) {
-            startDate = now.toLocalDate().atStartOfDay();
-            endDate = now.with(LocalTime.MAX);
-        } else if ("WEEK".equalsIgnoreCase(range)) {
-            int dayOfWeek = now.getDayOfWeek().getValue(); // 1(Mon) ~ 7(Sun)
-            startDate = now.minusDays(dayOfWeek - 1).toLocalDate().atStartOfDay();
-            endDate = now.plusDays(7 - dayOfWeek).with(LocalTime.MAX);
-        }
-
-        Page<TaskAssignee> assignees = taskAssigneeRepository.findMyTasksByUserIdAndSpaceId(
-                userId, spaceId, status, startDate, endDate, pageable);
-
-        return assignees.map(ta -> TaskSummaryDto.from(
-                ta.getTask(),
-                TaskSummaryDto.AssigneeSummaryDto.builder()
-                        .userId(ta.getUser().getId())
-                        .userName(ta.getUser().getName())
-                        .profileImage(ta.getUser().getProfileImage())
-                        .build()));
-    }
-
-    // 내 작업 요약 (상태별 개수)
-    public MyTaskSummaryDto getMyTaskSummary(Long userId, Long spaceId) {
-        validateSpaceMember(userId, spaceId);
-
-        long totalCount = taskAssigneeRepository.countByUserIdAndSpaceId(userId, spaceId);
-        long inProgressCount = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(userId, spaceId,
-                TaskStatus.IN_PROGRESS);
-        long doneCount = taskAssigneeRepository.countByUserIdAndSpaceIdAndStatus(userId, spaceId, TaskStatus.DONE);
-
-        LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
-        long delayedCount = taskAssigneeRepository.countDelayedTasks(userId, spaceId, TaskStatus.DONE, startOfToday);
-
-        return MyTaskSummaryDto.builder()
-                .totalCount(totalCount)
-                .inProgressCount(inProgressCount)
-                .doneCount(doneCount)
-                .delayedCount(delayedCount)
-                .build();
-    }
-
 }
